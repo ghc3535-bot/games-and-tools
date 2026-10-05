@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Catur</title>
+<link rel="stylesheet" href="catur.css">
+</head>
+<body>
+<div class="app">
+
+  <div class="top-nav">
+    <button onclick="window.location.href='index.html'">🏠 Home</button>
+    <button onclick="window.location.href='advanced.html'">⚙️ Advanced Tools</button>
+    <button onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
+  </div>
+
+  <h1>♞ Game Catur 2 Player</h1>
+  <div class="mode-selector">
+    <button onclick="setGameMode('pvp')" id="btn-pvp" class="active">👥 2 Player</button>
+    <button onclick="setGameMode('bot')" id="btn-bot">🤖 Vs Bot</button>
+
+    <div class="mode-label">Level:</div>
+    <select onchange="setBotDifficulty(this.value)" id="bot-level">
+      <option value="easy">Easy</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Hard</option>
+      <option value="insane">Insane - Magnus</option>
+    </select>
+
+    <div class="mode-label">Warna Bot:</div>
+    <select onchange="setBotColor(this.value)" id="bot-color">
+      <option value="b" selected>Bot Hitam</option>
+      <option value="w">Bot Putih</option>
+    </select>
+  </div>
+
+  <div id="status">Giliran: Putih</div>
+
+  <div class="board-frame pvp" id="boardFrame">
+    <div class="coords top" id="coordsTop"></div>
+    <div class="coords left" id="coordsLeft"></div>
+    <div id="board" class="pvp"></div>
+    <div class="coords right" id="coordsRight"></div>
+    <div class="coords bottom" id="coordsBottom"></div>
+  </div>
+
+  <div id="gameOverOverlay" class="hidden">
+    <div class="game-over-box">
+      <h2 id="gameOverText">Skakmat!</h2>
+      <p id="gameOverSubtext">Putih menang</p>
+      <button onclick="resetGame()">Main Lagi</button>
+    </div>
+  </div>
+
+  <div id="promotionOverlay" class="hidden">
+    <div class="game-over-box">
+      <h2>Promosi Pion</h2>
+      <p>Pilih bidak pengganti:</p>
+      <div class="promo-row">
+        <button class="promo-btn" data-piece="q" onclick="choosePromotion('q')" title="Ratu"></button>
+        <button class="promo-btn" data-piece="r" onclick="choosePromotion('r')" title="Benteng"></button>
+        <button class="promo-btn" data-piece="b" onclick="choosePromotion('b')" title="Gajah"></button>
+        <button class="promo-btn" data-piece="n" onclick="choosePromotion('n')" title="Kuda"></button>
+      </div>
+      <button class="promo-cancel" onclick="cancelPromotion()">Batal</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="resetGame()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>
+      Reset Game
+    </button>
+    <button onclick="undoMove()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+      Undo
+    </button>
+  </div>
+
+  <div id="captured">
+    <div>Bidak Putih Dimakan: <span id="capturedWhite"></span></div>
+    <div>Bidak Hitam Dimakan: <span id="capturedBlack"></span></div>
+  </div>
+
+</div>
+
+<script src="catur.js"></script>
+</body>
+</html>

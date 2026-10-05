@@ -1,0 +1,361 @@
+/* ===== TEMA (light = kayu oak, dark = kayu walnut) ===== */
+:root {
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='f' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='0.012 0.55' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 0.22  0 0 0 0 0.12  0 0 0 0 0.04  1.1 0 0 0 -0.38'/></filter><rect width='200' height='200' filter='url(%23f)'/></svg>");
+
+  --table: #c9a275;
+  --on-table: #2e1c0e;
+  --panel: #fbf1de;
+  --panel-text: #3b2615;
+  --sq-light: #f2d6a8;
+  --sq-dark: #8d5b38;
+  --frame: #6b4426;
+  --frame-text: #f3e2c2;
+  --wood-btn: #4a2f1c;
+  --wood-btn-text: #f3e2c2;
+  --wood-btn-hover: #62402a;
+  --selected: #2e9b3a;
+  --outline-move: #2e9b3a;
+  --outline-capture: #d93a2f;
+}
+
+[data-theme="dark"] {
+  --table: #241a13;
+  --on-table: #f1e2c8;
+  --panel: #2d2118;
+  --panel-text: #f1e2c8;
+  --sq-light: #b89468;
+  --sq-dark: #5b3a24;
+  --frame: #3a2616;
+  --frame-text: #d9c4a0;
+  --wood-btn: #4a2f1c;
+  --wood-btn-text: #f3e2c2;
+  --wood-btn-hover: #62402a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 16px;
+  min-height: 100vh;
+  color: var(--on-table);
+  background-color: var(--table);
+  /* papan meja kayu: garis sambungan + serat */
+  background-image:
+    repeating-linear-gradient(180deg, transparent 0 138px, rgba(0,0,0,0.28) 138px 140px),
+    var(--grain);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.app { max-width: 560px; margin: 0 auto; text-align: center; }
+h1 { margin: 0 0 16px; font-size: 1.6rem; }
+
+/* ===== NAV & STATUS ===== */
+.top-nav {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.top-nav button {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: none;
+  background: var(--panel);
+  color: var(--panel-text);
+  cursor: pointer;
+  font-weight: bold;
+  flex: 1;
+  min-width: 120px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+#status {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 14px;
+  padding: 10px;
+  background: var(--panel);
+  color: var(--panel-text);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* ===== BINGKAI + KOORDINAT ===== */
+.board-frame {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 22px;
+  grid-template-rows: 22px auto 22px;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  background-color: var(--frame);
+  background-image: var(--grain);
+  border-radius: 6px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5), inset 0 0 0 2px rgba(255,255,255,0.08);
+}
+
+.coords {
+  display: grid;
+  color: var(--frame-text);
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  user-select: none;
+}
+.coords span { display: flex; align-items: center; justify-content: center; }
+.coords.top    { grid-column: 2; grid-row: 1; grid-template-columns: repeat(8, 1fr); }
+.coords.bottom { grid-column: 2; grid-row: 3; grid-template-columns: repeat(8, 1fr); }
+.coords.left   { grid-column: 1; grid-row: 2; grid-template-rows: repeat(8, 1fr); }
+.coords.right  { grid-column: 3; grid-row: 2; grid-template-rows: repeat(8, 1fr); }
+
+/* mode 2 player: sisi atas dibalik supaya terbaca pemain yang duduk di seberang */
+.board-frame.pvp .coords.top span,
+.board-frame.pvp .coords.right span { transform: rotate(180deg); }
+
+/* ===== PAPAN ===== */
+#board {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  position: relative;
+  outline: 2px solid rgba(0,0,0,0.55);
+}
+
+.square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  background-size: 200px 200px;
+}
+.square.light { background-color: var(--sq-light); background-image: var(--grain); }
+.square.dark  { background-color: var(--sq-dark);  background-image: var(--grain); }
+
+/* bidak dipilih = bingkai hijau */
+.square.selected { box-shadow: inset 0 0 0 4px var(--selected); }
+
+/* langkah valid = titik hijau, bidak musuh = cincin merah */
+.square.highlight::after {
+  content: '';
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: rgba(46,155,58,0.85);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.55);
+  pointer-events: none;
+  z-index: 3;
+  animation: pulse 1.1s ease-in-out infinite;
+}
+.square.highlight.capture::after {
+  width: 92%;
+  height: 92%;
+  background: transparent;
+  border: 4px solid var(--outline-capture);
+  box-shadow: none;
+  animation: pulseRed 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse    { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.9); } }
+@keyframes pulseRed { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.95); } }
+
+/* raja kena skak = cahaya merah */
+.square.light.check, .square.dark.check {
+  background-image:
+    radial-gradient(circle, rgba(255,40,30,0.95) 0, rgba(255,40,30,0.5) 50%, transparent 75%),
+    var(--grain);
+  animation: blink 0.8s ease-in-out infinite;
+}
+@keyframes blink { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+
+/* ===== BIDAK SVG ===== */
+.pc {
+  position: relative;
+  z-index: 2;
+  width: 88%;
+  height: 88%;
+  display: flex;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+}
+.pc svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* mode 2 player: bidak hitam (sisi atas) menghadap pemain di seberang */
+#board.pvp .pc.b { transform: rotate(180deg); }
+
+/* bidak yang sedang meluncur */
+.piece.moving {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  pointer-events: none;
+  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== TOMBOL KONTROL ===== */
+.controls {
+  margin: 18px 0;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--wood-btn);
+  color: var(--wood-btn-text);
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+}
+.controls button:hover { background-color: var(--wood-btn-hover); }
+.controls svg { width: 20px; height: 20px; }
+
+/* ===== BIDAK DIMAKAN ===== */
+#captured {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: var(--panel);
+  color: var(--panel-text);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+#captured div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 30px; }
+#captured span { display: inline-flex; flex-wrap: wrap; align-items: center; }
+.cap-pc { display: inline-block; width: 28px; height: 28px; margin-right: -4px; }
+.cap-pc svg { width: 100%; height: 100%; display: block; }
+
+/* ===== OVERLAY (game over & promosi) ===== */
+#gameOverOverlay, #promotionOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+#gameOverOverlay.hidden, #promotionOverlay.hidden { display: none; }
+
+.game-over-box {
+  background: var(--panel);
+  color: var(--panel-text);
+  padding: 36px 28px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  animation: popIn 0.3s ease-out;
+  max-width: 92vw;
+}
+.game-over-box h2 { font-size: 2rem; margin: 0 0 10px; color: var(--outline-capture); }
+.game-over-box p { font-size: 1.2rem; margin: 0 0 20px; }
+.game-over-box button {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  background: var(--outline-move);
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}
+@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.promo-row { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }
+.game-over-box .promo-btn {
+  width: 68px;
+  height: 68px;
+  padding: 6px;
+  background-color: var(--sq-light);
+  background-image: var(--grain);
+  border: 2px solid var(--sq-dark);
+}
+.game-over-box .promo-btn:hover { box-shadow: inset 0 0 0 3px var(--selected); }
+.promo-btn svg { width: 100%; height: 100%; display: block; }
+.game-over-box .promo-cancel {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentColor;
+  padding: 8px 20px;
+}
+
+/* ===== MODE SELECTOR ===== */
+.mode-selector {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 15px;
+  background: #1e1e1e;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+.mode-selector button {
+  padding: 10px 18px;
+  border: 2px solid #5d4037;
+  border-radius: 6px;
+  background: #3e2723;
+  color: #f0d9b5;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 0.95rem;
+}
+.mode-selector button:hover {
+  background: #5d4037;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+.mode-selector button.active { background: #b58863; color: #1e1e1e; border-color: #f0d9b5; }
+.mode-selector select {
+  padding: 10px 15px;
+  border: 2px solid #5d4037;
+  border-radius: 6px;
+  background: #3e2723;
+  color: #f0d9b5;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: 0.2s;
+  outline: none;
+}
+.mode-selector select:hover { background: #5d4037; border-color: #b58863; }
+.mode-selector select:focus { border-color: #ffeb3b; box-shadow: 0 0 0 2px rgba(255,235,59,0.3); }
+.mode-label { display: flex; align-items: center; gap: 5px; color: #f0d9b5; font-size: 0.9rem; font-weight: bold; }
+
+/* ===== HP ===== */
+@media (max-width: 600px) {
+  body { padding: 10px; }
+  .mode-selector { flex-direction: column; padding: 12px; }
+  .mode-selector button, .mode-selector select { width: 100%; font-size: 0.9rem; }
+  .board-frame { grid-template-columns: 18px minmax(0, 1fr) 18px; grid-template-rows: 18px auto 18px; }
+  .coords { font-size: 11px; }
+  .square.highlight.capture::after { border-width: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .square.highlight::after, .square.check { animation: none; }
+  .piece.moving { transition: none; }
+}

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Advanced Tools</title>
+<link rel="stylesheet" href="advanced.css">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app">
+
+  <div class="theme-toggle">
+    <button onclick="window.location.href='index.html'">← Kembali</button>
+    <button onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
+  </div>
+
+  <h1>⚙️ Advanced Tools</h1>
+
+  <!-- Tab Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('search', event)">🔍 Search</button>
+    <button class="tab-btn" onclick="switchTab('image', event)">🎨 Generate Gambar</button>
+    <button class="tab-btn" onclick="switchTab('game', event)">🎮 Catur Bulan</button>
+    <button class="tab-btn" onclick="switchTab('hadist', event)">📖 Hadist & Dalil</button>
+  </div>
+
+  <!-- Tab 1: Search -->
+  <div id="tab-search" class="tab-content active">
+    <h2>🔍 Cari di Catatan & To-Do</h2>
+    <div id="searchBox">
+      <input type="text" id="searchInput" placeholder="Ketik kata kunci..." onkeyup="doSearch()">
+      <div id="searchResults" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Generate Gambar -->
+  <div id="tab-image" class="tab-content">
+    <h2>🎨 Generate Gambar</h2>
+    <p style="color:var(--text-secondary); text-align:center; margin-top:-10px;">
+      Ketik prompt, gambar langsung jadi di bawah
+    </p>
+    <div id="imageGen">
+      <input type="text" id="imagePrompt" placeholder="Contoh: kucing lucu pakai kacamata, cyberpunk city">
+      <select id="imageOrientation">
+        <option value="square">Square 1:1</option>
+        <option value="landscape">Landscape 16:9</option>
+        <option value="vertical">Vertical 9:16</option>
+      </select>
+      <button onclick="generateImage()">Generate</button>
+      <div id="imageResult"></div>
+    </div>
+  </div>
+
+  <!-- Tab 3: Game -->
+  <div id="tab-game" class="tab-content">
+    <h2>🎮 Game: Catur Bulan</h2>
+    <p style="color:var(--text-secondary); text-align:center; margin-top:-10px;">
+      Max 3 biji per player. Kalo udah 3, biji paling lama ilang. Klik kotak buat jalan
+    </p>
+
+    <div id="ttt-setup">
+      <button id="ttt-start-btn" class="reset-btn">▶️ Start Game</button>
+    </div>
+
+    <div id="ttt-game" style="display:none">
+      <div class="ttt-timer">
+        <span>X: <b id="timerX">5</b>s</span>
+        <span>O: <b id="timerO">5</b>s</span>
+      </div>
+      <div id="ttt-status">Giliran: X</div>
+      <div id="ttt-board">
+        <button class="ttt-cell" data-index="0"></button>
+        <button class="ttt-cell" data-index="1"></button>
+        <button class="ttt-cell" data-index="2"></button>
+        <button class="ttt-cell" data-index="3"></button>
+        <button class="ttt-cell" data-index="4"></button>
+        <button class="ttt-cell" data-index="5"></button>
+        <button class="ttt-cell" data-index="6"></button>
+        <button class="ttt-cell" data-index="7"></button>
+        <button class="ttt-cell" data-index="8"></button>
+      </div>
+      <div>
+        <button id="ttt-playagain-btn" class="reset-btn">🔁 Play Again</button>
+        <button onclick="resetTTT()" class="reset-btn">🔄 Back to Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 4: Hadist & Dalil -->
+  <div id="tab-hadist" class="tab-content">
+    <h2>📖 100 Hadist & 100 Dalil</h2>
+    <input type="text" id="hadistSearch" placeholder="Cari hadist/dalil..." onkeyup="filterHadist()">
+    <div class="hadist-tabs">
+      <button class="hadist-tab-btn active" onclick="switchHadistTab('hadist', event)">Hadist</button>
+      <button class="hadist-tab-btn" onclick="switchHadistTab('dalil', event)">Dalil Al-Quran</button>
+    </div>
+    <div id="hadistList" class="hadist-list"></div>
+  </div>
+
+  <hr style="margin:40px 0; border:1px solid var(--border-color)">
+
+  <!-- Nav Tab Tools -->
+  <h3>⚡ Tools Cepat</h3>
+  <div class="tool-nav">
+    <button class="tool-btn active" onclick="switchToolTab('konverter', event)">📏 Konverter</button>
+    <button class="tool-btn" onclick="switchToolTab('persen', event)">💰 Persen</button>
+    <button class="tool-btn" onclick="switchToolTab('massa', event)">⚖️ Massa→Liter</button>
+  </div>
+
+  <!-- Tab 1: Konverter -->
+  <div id="tool-konverter" class="tool-content active">
+    <div class="tool-box">
+      <h4>Konverter Satuan</h4>
+      <div class="converter-grid">
+        <input type="number" id="valConv" placeholder="Masukkan angka" step="any">
+        <select id="fromUnit">
+          <option value="g">Gram</option>
+          <option value="kg">Kilogram</option>
+          <option value="mg">Miligram</option>
+          <option value="ml">Mililiter</option>
+          <option value="l">Liter</option>
+          <option value="cm">Centimeter</option>
+          <option value="m">Meter</option>
+          <option value="mm">MiliMeter</option>
+          <option value="inch">Inch</option>
+        </select>
+        <span style="font-size:20px">→</span>
+        <select id="toUnit">
+          <option value="kg">Kilogram</option>
+          <option value="g">Gram</option>
+          <option value="mg">Miligram</option>
+          <option value="l">Liter</option>
+          <option value="ml">Mililiter</option>
+          <option value="m">Meter</option>
+          <option value="mm">MiliMeter</option>
+          <option value="cm">Centimeter</option>
+          <option value="inch">Inch</option>
+        </select>
+        <button class="btn-accent" onclick="hitungKonversi()">Convert</button>
+      </div>
+      <div id="hasilConv" class="hasil-box"></div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Persen -->
+  <div id="tool-persen" class="tool-content">
+    <div class="tool-box">
+      <h4>Persentase Cepat - Diskon%</h4>
+      <input type="number" id="valPersen" placeholder="Harga awal">
+      <input type="number" id="persen" placeholder="Diskon %">
+      <button class="btn-accent" onclick="hitungPersen()">Hitung</button>
+      <div id="hasilPersen" class="hasil-box"></div>
+    </div>
+  </div>
+
+  <!-- Tab 3: Massa -->
+  <div id="tool-massa" class="tool-content">
+    <div class="tool-box">
+      <h4>Massa ke Volume - Butuh Densitas</h4>
+      <input type="number" id="kgInput" placeholder="Berat kg" step="any">
+      <select id="bahan">
+        <option value="1">Air - 1.0 kg/L</option>
+        <option value="0.92">Minyak Goreng - 0.92 kg/L</option>
+        <option value="1.03">Susu - 1.03 kg/L</option>
+        <option value="13.6">Merkuri - 13.6 kg/L</option>
+        <option value="0.79">Alkohol - 0.79 kg/L</option>
+      </select>
+      <button class="btn-accent" onclick="kgKeLiter()">Hitung</button>
+      <div id="hasilKgLiter" class="hasil-box"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="advanced.js"></script>
+</body>
+</html>
