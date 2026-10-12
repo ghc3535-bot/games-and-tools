@@ -2,8 +2,16 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b57aff">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Multi Tool">
 <title>Advanced Tools</title>
-<link rel="stylesheet" href="advanced.css">
+<link rel="stylesheet" href="advanced.css?v=4">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -16,29 +24,400 @@
 
   <h1>⚙️ Advanced Tools</h1>
 
-  <!-- Tab Navigation -->
-  <div class="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('search', event)">🔍 Search</button>
-    <button class="tab-btn" onclick="switchTab('image', event)">🎨 Generate Gambar</button>
-    <button class="tab-btn" onclick="switchTab('game', event)">🎮 Catur Bulan</button>
-    <button class="tab-btn" onclick="switchTab('hadist', event)">📖 Hadist & Dalil</button>
-  </div>
+  <!-- Navigasi utama: satu baris, ikon di atas label -->
+  <nav class="main-nav" aria-label="Menu utama">
+    <button class="nav-btn active" data-tab="tools" onclick="switchTab('tools', event)"><span class="nav-ico">🧰</span><span>Tools</span></button>
+    <button class="nav-btn" data-tab="search" onclick="switchTab('search', event)"><span class="nav-ico">🔍</span><span>Cari</span></button>
+    <button class="nav-btn" data-tab="image" onclick="switchTab('image', event)"><span class="nav-ico">🎨</span><span>Gambar</span></button>
+    <button class="nav-btn" data-tab="game" onclick="switchTab('game', event)"><span class="nav-ico">🎮</span><span>Game</span></button>
+    <button class="nav-btn" data-tab="hadist" onclick="switchTab('hadist', event)"><span class="nav-ico">📖</span><span>Hadist</span></button>
+  </nav>
 
-  <!-- Tab 1: Search -->
-  <div id="tab-search" class="tab-content active">
-    <h2>🔍 Cari di Catatan & To-Do</h2>
+  <!-- ===== TOOLS: daftar kartu, lalu panel tool yang dipilih ===== -->
+  <section id="tab-tools" class="tab-content active">
+    <div id="toolHome">
+      <input type="search" id="toolFilter" placeholder="Cari tool… (mis. tanggal, sandi, warna)" oninput="filterTools()" aria-label="Cari tool">
+      <div id="toolGrid" class="tool-grid"></div>
+      <p id="toolEmpty" class="empty hidden">Tool tidak ditemukan</p>
+    </div>
+
+    <div id="toolView" class="hidden">
+      <div class="tool-head">
+        <button class="back-btn" onclick="closeTool()">← Semua tools</button>
+        <h2 id="toolTitle"></h2>
+      </div>
+
+      <!-- Konverter -->
+      <div id="tool-konverter" class="tool-panel hidden">
+        <div class="tool-box">
+          <label class="lbl" for="valConv">Nilai</label>
+          <input type="number" id="valConv" placeholder="Masukkan angka" step="any" inputmode="decimal" oninput="hitungKonversi(true)">
+          <div class="swap-row">
+            <div class="grow"><label class="lbl" for="fromUnit">Dari</label>
+              <select id="fromUnit" onchange="hitungKonversi(true)">
+                <option value="g">Gram</option>
+                <option value="kg">Kilogram</option>
+                <option value="mg">Miligram</option>
+                <option value="ml">Mililiter</option>
+                <option value="l">Liter</option>
+                <option value="cm">Centimeter</option>
+                <option value="m">Meter</option>
+                <option value="mm">MiliMeter</option>
+                <option value="inch">Inch</option>
+
+              </select></div>
+            <button class="icon-btn" onclick="tukarSatuan()" aria-label="Tukar satuan" title="Tukar">⇄</button>
+            <div class="grow"><label class="lbl" for="toUnit">Ke</label>
+              <select id="toUnit" onchange="hitungKonversi(true)">
+                <option value="kg">Kilogram</option>
+                <option value="g">Gram</option>
+                <option value="mg">Miligram</option>
+                <option value="l">Liter</option>
+                <option value="ml">Mililiter</option>
+                <option value="m">Meter</option>
+                <option value="mm">MiliMeter</option>
+                <option value="cm">Centimeter</option>
+                <option value="inch">Inch</option>
+
+              </select></div>
+          </div>
+          <button class="btn-accent" onclick="hitungKonversi()">Convert</button>
+          <div id="hasilConv" class="hasil-box"></div>
+        </div>
+      </div>
+
+      <!-- Persen / Diskon -->
+      <div id="tool-persen" class="tool-panel hidden">
+        <div class="tool-box">
+          <label class="lbl" for="valPersen">Harga awal (Rp)</label>
+          <input type="number" id="valPersen" placeholder="Harga awal" inputmode="decimal" oninput="hitungPersen(true)">
+          <label class="lbl" for="persen">Diskon (%)</label>
+          <input type="number" id="persen" placeholder="Diskon %" inputmode="decimal" oninput="hitungPersen(true)">
+          <button class="btn-accent" onclick="hitungPersen()">Hitung</button>
+          <div id="hasilPersen" class="hasil-box"></div>
+        </div>
+      </div>
+
+      <!-- Massa -> Liter -->
+      <div id="tool-massa" class="tool-panel hidden">
+        <div class="tool-box">
+          <label class="lbl" for="kgInput">Berat (kg)</label>
+          <input type="number" id="kgInput" placeholder="Berat kg" step="any" inputmode="decimal" oninput="kgKeLiter(true)">
+          <label class="lbl" for="bahan">Bahan (densitas)</label>
+          <select id="bahan" onchange="kgKeLiter(true)">
+            <option value="1">Air - 1.0 kg/L</option>
+            <option value="0.92">Minyak Goreng - 0.92 kg/L</option>
+            <option value="1.03">Susu - 1.03 kg/L</option>
+            <option value="13.6">Merkuri - 13.6 kg/L</option>
+            <option value="0.79">Alkohol - 0.79 kg/L</option>
+
+          </select>
+          <button class="btn-accent" onclick="kgKeLiter()">Hitung</button>
+          <div id="hasilKgLiter" class="hasil-box"></div>
+        </div>
+      </div>
+
+      <!-- Tanggal -->
+      <div id="tool-tanggal" class="tool-panel hidden">
+        <div class="seg" role="tablist">
+          <button class="seg-btn active" data-seg="tgl:selisih" onclick="tglMode('selisih', this)">Selisih</button>
+          <button class="seg-btn" data-seg="tgl:tambah" onclick="tglMode('tambah', this)">Tambah/Kurang</button>
+          <button class="seg-btn" data-seg="tgl:umur" onclick="tglMode('umur', this)">Umur</button>
+        </div>
+        <div class="tool-box">
+          <div id="tgl-selisih" class="seg-pane">
+            <div class="two">
+              <div><label class="lbl" for="tglA">Dari tanggal</label><input type="date" id="tglA" onchange="tglHitung()" oninput="tglHitung()"></div>
+              <div><label class="lbl" for="tglB">Sampai tanggal</label><input type="date" id="tglB" onchange="tglHitung()" oninput="tglHitung()"></div>
+            </div>
+            <div id="tglHasil1" class="hasil-box"></div>
+          </div>
+          <div id="tgl-tambah" class="seg-pane hidden">
+            <label class="lbl" for="tglMulai">Tanggal awal</label>
+            <input type="date" id="tglMulai" onchange="tglHitung()" oninput="tglHitung()">
+            <div class="three">
+              <div><label class="lbl" for="tglArah">Aksi</label>
+                <select id="tglArah" onchange="tglHitung()"><option value="1">Tambah</option><option value="-1">Kurang</option></select></div>
+              <div><label class="lbl" for="tglJumlah">Jumlah</label>
+                <input type="number" id="tglJumlah" value="30" min="0" inputmode="numeric" oninput="tglHitung()"></div>
+              <div><label class="lbl" for="tglSatuan">Satuan</label>
+                <select id="tglSatuan" onchange="tglHitung()"><option value="hari">Hari</option><option value="minggu">Minggu</option><option value="bulan">Bulan</option><option value="tahun">Tahun</option></select></div>
+            </div>
+            <div id="tglHasil2" class="hasil-box"></div>
+          </div>
+          <div id="tgl-umur" class="seg-pane hidden">
+            <div class="two">
+              <div><label class="lbl" for="tglLahir">Tanggal lahir</label><input type="date" id="tglLahir" onchange="tglHitung()" oninput="tglHitung()"></div>
+              <div><label class="lbl" for="tglRef">Per tanggal</label><input type="date" id="tglRef" onchange="tglHitung()" oninput="tglHitung()"></div>
+            </div>
+            <div id="tglHasil3" class="hasil-box"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pengacak -->
+      <div id="tool-acak" class="tool-panel hidden">
+        <div class="seg" role="tablist">
+          <button class="seg-btn active" data-seg="acak:angka" onclick="acakMode('angka', this)">Angka</button>
+          <button class="seg-btn" data-seg="acak:daftar" onclick="acakMode('daftar', this)">Daftar</button>
+          <button class="seg-btn" data-seg="acak:koin" onclick="acakMode('koin', this)">Koin</button>
+          <button class="seg-btn" data-seg="acak:dadu" onclick="acakMode('dadu', this)">Dadu</button>
+        </div>
+        <div class="tool-box">
+          <div id="acak-angka" class="seg-pane">
+            <div class="three">
+              <div><label class="lbl" for="acakMin">Minimum</label><input type="number" id="acakMin" value="1" inputmode="numeric"></div>
+              <div><label class="lbl" for="acakMax">Maksimum</label><input type="number" id="acakMax" value="100" inputmode="numeric"></div>
+              <div><label class="lbl" for="acakJumlah">Jumlah</label><input type="number" id="acakJumlah" value="1" min="1" inputmode="numeric"></div>
+            </div>
+            <label class="check"><input type="checkbox" id="acakUnik"> Tanpa angka kembar</label>
+            <button class="btn-accent" onclick="acakAngka()">Acak angka</button>
+            <div id="acakHasilAngka" class="hasil-box"></div>
+          </div>
+          <div id="acak-daftar" class="seg-pane hidden">
+            <label class="lbl" for="acakDaftar">Daftar (satu per baris)</label>
+            <textarea id="acakDaftar" rows="5" placeholder="Andi&#10;Budi&#10;Citra&#10;Dewi"></textarea>
+            <div class="two">
+              <div><label class="lbl" for="acakPilih">Pilih berapa</label><input type="number" id="acakPilih" value="1" min="1" inputmode="numeric"></div>
+              <div class="end"><button class="btn-soft" onclick="acakKocok()">Kocok urutan</button></div>
+            </div>
+            <button class="btn-accent" onclick="acakDaftarPilih()">Pilih acak</button>
+            <div id="acakHasilDaftar" class="hasil-box"></div>
+          </div>
+          <div id="acak-koin" class="seg-pane hidden">
+            <div id="koinTampil" class="koin">🪙</div>
+            <button class="btn-accent" onclick="acakKoin()">Lempar koin</button>
+            <div id="acakHasilKoin" class="hasil-box"></div>
+          </div>
+          <div id="acak-dadu" class="seg-pane hidden">
+            <label class="lbl" for="acakDaduJml">Jumlah dadu</label>
+            <select id="acakDaduJml"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+            <button class="btn-accent" onclick="acakDadu()">Kocok dadu</button>
+            <div id="acakHasilDadu" class="hasil-box"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warna -->
+      <div id="tool-warna" class="tool-panel hidden">
+        <div class="tool-box">
+          <div class="warna-input">
+            <input type="color" id="warnaPicker" value="#b57aff" aria-label="Pilih warna" oninput="warnaDariPicker()">
+            <input type="text" id="warnaHex" value="#b57aff" placeholder="#b57aff atau rgb(181,122,255)" spellcheck="false" autocapitalize="off" oninput="warnaDariTeks()">
+          </div>
+          <div id="warnaSwatch" class="swatch"></div>
+          <div id="warnaNilai" class="nilai-list"></div>
+          <div id="warnaKontras" class="hasil-box"></div>
+          <label class="lbl">Gradasi (ketuk untuk memakai)</label>
+          <div id="warnaPalet" class="palet"></div>
+        </div>
+      </div>
+
+      <!-- Teks -->
+      <div id="tool-teks" class="tool-panel hidden">
+        <div class="tool-box">
+          <label class="lbl" for="teksInput">Teks</label>
+          <textarea id="teksInput" rows="6" placeholder="Tempel atau ketik teks di sini…" oninput="teksHitung()"></textarea>
+          <div id="teksStat" class="stat-grid"></div>
+          <label class="lbl">Ubah teks</label>
+          <div class="chip-row">
+            <button class="chip" onclick="teksAksi('upper')">HURUF BESAR</button>
+            <button class="chip" onclick="teksAksi('lower')">huruf kecil</button>
+            <button class="chip" onclick="teksAksi('title')">Huruf Awal Kapital</button>
+            <button class="chip" onclick="teksAksi('kalimat')">Awal kalimat</button>
+            <button class="chip" onclick="teksAksi('spasi')">Rapikan spasi</button>
+            <button class="chip" onclick="teksAksi('urut')">Urutkan baris</button>
+            <button class="chip" onclick="teksAksi('unik')">Hapus baris ganda</button>
+            <button class="chip" onclick="teksAksi('balik')">Balik teks</button>
+          </div>
+          <div class="two">
+            <button class="btn-soft" onclick="teksAksi('hapus')">Kosongkan</button>
+            <button class="btn-accent small" onclick="copyText(document.getElementById('teksInput').value, this)">Salin</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sandi -->
+      <div id="tool-sandi" class="tool-panel hidden">
+        <div class="tool-box">
+          <div id="sandiHasil" class="sandi-box" aria-live="polite"></div>
+          <div id="sandiKekuatan" class="kuat"><div class="kuat-bar"><span id="sandiBar"></span></div><span id="sandiLabel"></span></div>
+          <label class="lbl" for="sandiPanjang">Panjang: <b id="sandiPanjangNilai">16</b> karakter</label>
+          <input type="range" id="sandiPanjang" min="8" max="64" value="16" oninput="sandiBuat()">
+          <div class="check-grid">
+            <label class="check"><input type="checkbox" id="sandiBesar" checked onchange="sandiBuat()"> Huruf BESAR</label>
+            <label class="check"><input type="checkbox" id="sandiKecil" checked onchange="sandiBuat()"> Huruf kecil</label>
+            <label class="check"><input type="checkbox" id="sandiAngka" checked onchange="sandiBuat()"> Angka 0-9</label>
+            <label class="check"><input type="checkbox" id="sandiSimbol" checked onchange="sandiBuat()"> Simbol !@#</label>
+            <label class="check wide"><input type="checkbox" id="sandiMirip" onchange="sandiBuat()"> Hindari karakter mirip (0 O 1 l I)</label>
+          </div>
+          <div class="two">
+            <button class="btn-accent" onclick="sandiBuat()">Buat ulang</button>
+            <button class="btn-soft" onclick="copyText(document.getElementById('sandiHasil').textContent, this)">Salin</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timer -->
+      <div id="tool-timer" class="tool-panel hidden">
+        <div class="seg" role="tablist">
+          <button class="seg-btn active" data-seg="tmr:mundur" onclick="tmrMode('mundur', this)">Hitung mundur</button>
+          <button class="seg-btn" data-seg="tmr:pomodoro" onclick="tmrMode('pomodoro', this)">Pomodoro</button>
+        </div>
+        <div class="tool-box">
+          <div id="tmrFase" class="tmr-fase"></div>
+          <div id="tmrTampil" class="tmr-tampil" aria-live="off">05:00</div>
+          <div id="tmr-mundur" class="seg-pane">
+            <div class="two">
+              <div><label class="lbl" for="tmrMenit">Menit</label><input type="number" id="tmrMenit" value="5" min="0" max="999" inputmode="numeric" oninput="tmrAtur()"></div>
+              <div><label class="lbl" for="tmrDetik">Detik</label><input type="number" id="tmrDetik" value="0" min="0" max="59" inputmode="numeric" oninput="tmrAtur()"></div>
+            </div>
+            <div class="chip-row">
+              <button class="chip" onclick="tmrPreset(1)">1 mnt</button>
+              <button class="chip" onclick="tmrPreset(3)">3 mnt</button>
+              <button class="chip" onclick="tmrPreset(5)">5 mnt</button>
+              <button class="chip" onclick="tmrPreset(10)">10 mnt</button>
+              <button class="chip" onclick="tmrPreset(15)">15 mnt</button>
+              <button class="chip" onclick="tmrPreset(30)">30 mnt</button>
+            </div>
+          </div>
+          <div id="tmr-pomodoro" class="seg-pane hidden">
+            <div class="two">
+              <div><label class="lbl" for="pomoFokus">Fokus (menit)</label><input type="number" id="pomoFokus" value="25" min="1" max="180" inputmode="numeric" oninput="tmrAtur()"></div>
+              <div><label class="lbl" for="pomoIstirahat">Istirahat (menit)</label><input type="number" id="pomoIstirahat" value="5" min="1" max="60" inputmode="numeric" oninput="tmrAtur()"></div>
+            </div>
+            <div id="pomoSesi" class="hasil-box show">Sesi fokus selesai: <b id="pomoJumlah">0</b></div>
+          </div>
+          <div class="two">
+            <button class="btn-accent" id="tmrToggle" onclick="tmrToggle()">▶ Mulai</button>
+            <button class="btn-soft" onclick="tmrReset()">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bagi Tagihan -->
+      <div id="tool-tagihan" class="tool-panel hidden">
+        <div class="tool-box">
+          <label class="lbl" for="bagiTotal">Total tagihan (Rp)</label>
+          <input type="number" id="bagiTotal" placeholder="Contoh: 300000" inputmode="decimal" oninput="bagiHitung()">
+          <div class="three">
+            <div><label class="lbl" for="bagiPajak">Pajak (%)</label><input type="number" id="bagiPajak" value="0" min="0" step="any" inputmode="decimal" oninput="bagiHitung()"></div>
+            <div><label class="lbl" for="bagiService">Service (%)</label><input type="number" id="bagiService" value="0" min="0" step="any" inputmode="decimal" oninput="bagiHitung()"></div>
+            <div><label class="lbl" for="bagiOrang">Orang</label><input type="number" id="bagiOrang" value="2" min="1" inputmode="numeric" oninput="bagiHitung()"></div>
+          </div>
+          <label class="lbl" for="bagiBulat">Pembulatan per orang (ke atas)</label>
+          <select id="bagiBulat" onchange="bagiHitung()">
+            <option value="1">Tanpa pembulatan</option>
+            <option value="100">Ke Rp100</option>
+            <option value="500">Ke Rp500</option>
+            <option value="1000">Ke Rp1.000</option>
+          </select>
+          <div id="bagiHasil" class="hasil-box"></div>
+        </div>
+      </div>
+
+      <!-- Basis Angka -->
+      <div id="tool-basis" class="tool-panel hidden">
+        <div class="tool-box">
+          <div class="two">
+            <div><label class="lbl" for="basisInput">Angka</label><input type="text" id="basisInput" value="255" placeholder="mis. 255" autocapitalize="off" spellcheck="false" oninput="basisHitung()"></div>
+            <div><label class="lbl" for="basisDari">Basis</label>
+              <select id="basisDari" onchange="basisHitung()"><option value="10">Desimal (10)</option><option value="2">Biner (2)</option><option value="8">Oktal (8)</option><option value="16">Heksa (16)</option></select></div>
+          </div>
+          <div id="basisHasil" class="nilai-list"></div>
+          <label class="lbl" for="romawiInput">Angka Romawi → desimal</label>
+          <input type="text" id="romawiInput" placeholder="mis. MCMXCIV" autocapitalize="characters" spellcheck="false" oninput="romawiHitung()">
+          <div id="romawiHasil" class="hasil-box"></div>
+        </div>
+      </div>
+      <!-- QR Code -->
+      <div id="tool-qr" class="tool-panel hidden">
+        <div class="tool-box">
+          <label class="lbl" for="qrJenis">Jenis isi</label>
+          <select id="qrJenis" onchange="qrGantiJenis()">
+            <option value="teks">Teks / Tautan</option>
+            <option value="wifi">WiFi</option>
+            <option value="wa">WhatsApp</option>
+            <option value="email">Email</option>
+            <option value="tel">Telepon</option>
+          </select>
+
+          <div id="qr-teks" class="qr-form">
+            <label class="lbl" for="qrTeks">Teks atau tautan</label>
+            <textarea id="qrTeks" rows="3" placeholder="https://contoh.com" oninput="qrBuatTunda()"></textarea>
+          </div>
+          <div id="qr-wifi" class="qr-form hidden">
+            <label class="lbl" for="qrSsid">Nama WiFi (SSID)</label>
+            <input type="text" id="qrSsid" autocomplete="off" autocapitalize="off" spellcheck="false" oninput="qrBuatTunda()">
+            <div class="two">
+              <div><label class="lbl" for="qrSandi">Kata sandi</label><input type="text" id="qrSandi" autocomplete="off" autocapitalize="off" spellcheck="false" oninput="qrBuatTunda()"></div>
+              <div><label class="lbl" for="qrEnkripsi">Keamanan</label>
+                <select id="qrEnkripsi" onchange="qrBuat()"><option value="WPA">WPA / WPA2 / WPA3</option><option value="WEP">WEP</option><option value="nopass">Tanpa sandi</option></select></div>
+            </div>
+            <label class="check"><input type="checkbox" id="qrTersembunyi" onchange="qrBuat()"> Jaringan tersembunyi</label>
+          </div>
+          <div id="qr-wa" class="qr-form hidden">
+            <label class="lbl" for="qrNomor">Nomor WhatsApp</label>
+            <input type="tel" id="qrNomor" placeholder="0812 3456 7890" inputmode="tel" oninput="qrBuatTunda()">
+            <label class="lbl" for="qrPesan">Pesan awal (opsional)</label>
+            <textarea id="qrPesan" rows="2" placeholder="Halo, saya mau tanya…" oninput="qrBuatTunda()"></textarea>
+          </div>
+          <div id="qr-email" class="qr-form hidden">
+            <label class="lbl" for="qrAlamat">Alamat email</label>
+            <input type="email" id="qrAlamat" placeholder="nama@contoh.com" autocapitalize="off" oninput="qrBuatTunda()">
+            <label class="lbl" for="qrSubjek">Subjek (opsional)</label>
+            <input type="text" id="qrSubjek" oninput="qrBuatTunda()">
+            <label class="lbl" for="qrIsiEmail">Isi pesan (opsional)</label>
+            <textarea id="qrIsiEmail" rows="2" oninput="qrBuatTunda()"></textarea>
+          </div>
+          <div id="qr-tel" class="qr-form hidden">
+            <label class="lbl" for="qrTelp">Nomor telepon</label>
+            <input type="tel" id="qrTelp" placeholder="+62 812 3456 7890" inputmode="tel" oninput="qrBuatTunda()">
+          </div>
+
+          <div id="qrKotak" class="qr-kotak kosong"><canvas id="qrCanvas" role="img" aria-label="Hasil QR Code"></canvas></div>
+          <div id="qrInfo" class="hasil-box"></div>
+
+          <div class="qr-aksi">
+            <button class="btn-accent" onclick="qrUnduhPng()" disabled>⬇ PNG</button>
+            <button class="btn-soft" onclick="qrUnduhSvg()" disabled>⬇ SVG</button>
+            <button class="btn-soft" onclick="qrSalinGambar(this)" disabled>📋 Salin</button>
+          </div>
+
+          <details class="qr-opsi">
+            <summary>Pengaturan lanjutan</summary>
+            <div class="two">
+              <div><label class="lbl" for="qrLevel">Koreksi kesalahan</label>
+                <select id="qrLevel" onchange="qrBuat()"><option value="L">L · 7%</option><option value="M" selected>M · 15%</option><option value="Q">Q · 25%</option><option value="H">H · 30%</option></select></div>
+              <div><label class="lbl" for="qrUkuran">Ukuran gambar</label>
+                <select id="qrUkuran" onchange="qrBuat()"><option value="256">256 px</option><option value="512" selected>512 px</option><option value="1024">1024 px</option></select></div>
+            </div>
+            <div class="three">
+              <div><label class="lbl" for="qrMargin">Margin</label><input type="number" id="qrMargin" value="4" min="0" max="10" inputmode="numeric" oninput="qrBuatTunda()"></div>
+              <div><label class="lbl" for="qrFg">Warna QR</label><input type="color" id="qrFg" value="#000000" oninput="qrBuatTunda()"></div>
+              <div><label class="lbl" for="qrBg">Warna latar</label><input type="color" id="qrBg" value="#ffffff" oninput="qrBuatTunda()"></div>
+            </div>
+            <p class="muted-kecil">Koreksi lebih tinggi membuat QR tetap terbaca walau sebagian rusak atau tertutup logo, tetapi gambarnya lebih padat. Warna gelap di atas latar terang paling aman untuk dipindai.</p>
+          </details>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== CARI ===== -->
+  <section id="tab-search" class="tab-content">
+    <h2><span class="t-ico">🔍</span> Cari Catatan & To-Do</h2>
     <div id="searchBox">
-      <input type="text" id="searchInput" placeholder="Ketik kata kunci..." onkeyup="doSearch()">
+      <input type="search" id="searchInput" placeholder="Ketik kata kunci..." onkeyup="doSearch()" oninput="doSearch()">
       <div id="searchResults" style="display:none;"></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Tab 2: Generate Gambar -->
-  <div id="tab-image" class="tab-content">
-    <h2>🎨 Generate Gambar</h2>
-    <p style="color:var(--text-secondary); text-align:center; margin-top:-10px;">
-      Ketik prompt, gambar langsung jadi di bawah
-    </p>
+  <!-- ===== GAMBAR ===== -->
+  <section id="tab-image" class="tab-content">
+    <h2><span class="t-ico">🎨</span> Generate Gambar</h2>
+    <p class="sub">Ketik prompt, lalu pilih situs untuk membuat gambarnya</p>
     <div id="imageGen">
       <input type="text" id="imagePrompt" placeholder="Contoh: kucing lucu pakai kacamata, cyberpunk city">
       <select id="imageOrientation">
@@ -49,14 +428,12 @@
       <button onclick="generateImage()">Generate</button>
       <div id="imageResult"></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Tab 3: Game -->
-  <div id="tab-game" class="tab-content">
-    <h2>🎮 Game: Catur Bulan</h2>
-    <p style="color:var(--text-secondary); text-align:center; margin-top:-10px;">
-      Max 3 biji per player. Kalo udah 3, biji paling lama ilang. Klik kotak buat jalan
-    </p>
+  <!-- ===== GAME ===== -->
+  <section id="tab-game" class="tab-content">
+    <h2><span class="t-ico">🎮</span> Catur Bulan</h2>
+    <p class="sub">Maks 3 biji per pemain. Kalau sudah 3, biji paling lama hilang. Ketuk kotak untuk jalan.</p>
 
     <div id="ttt-setup">
       <button id="ttt-start-btn" class="reset-btn">▶️ Start Game</button>
@@ -79,99 +456,30 @@
         <button class="ttt-cell" data-index="7"></button>
         <button class="ttt-cell" data-index="8"></button>
       </div>
-      <div>
+      <div class="game-actions">
         <button id="ttt-playagain-btn" class="reset-btn">🔁 Play Again</button>
         <button onclick="resetTTT()" class="reset-btn">🔄 Back to Menu</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Tab 4: Hadist & Dalil -->
-  <div id="tab-hadist" class="tab-content">
-    <h2>📖 100 Hadist & 100 Dalil</h2>
-    <input type="text" id="hadistSearch" placeholder="Cari hadist/dalil..." onkeyup="filterHadist()">
+  <!-- ===== HADIST ===== -->
+  <section id="tab-hadist" class="tab-content">
+    <h2><span class="t-ico">📖</span> Hadist & Dalil</h2>
+    <p class="sub" id="hadistInfo"></p>
+    <input type="search" id="hadistSearch" placeholder="Cari hadist/dalil..." onkeyup="filterHadist()" oninput="filterHadist()">
     <div class="hadist-tabs">
-      <button class="hadist-tab-btn active" onclick="switchHadistTab('hadist', event)">Hadist</button>
-      <button class="hadist-tab-btn" onclick="switchHadistTab('dalil', event)">Dalil Al-Quran</button>
+      <button class="hadist-tab-btn active" id="hadistTabBtn" onclick="switchHadistTab('hadist', event)">Hadist</button>
+      <button class="hadist-tab-btn" id="dalilTabBtn" onclick="switchHadistTab('dalil', event)">Dalil Al-Quran</button>
     </div>
     <div id="hadistList" class="hadist-list"></div>
-  </div>
-
-  <hr style="margin:40px 0; border:1px solid var(--border-color)">
-
-  <!-- Nav Tab Tools -->
-  <h3>⚡ Tools Cepat</h3>
-  <div class="tool-nav">
-    <button class="tool-btn active" onclick="switchToolTab('konverter', event)">📏 Konverter</button>
-    <button class="tool-btn" onclick="switchToolTab('persen', event)">💰 Persen</button>
-    <button class="tool-btn" onclick="switchToolTab('massa', event)">⚖️ Massa→Liter</button>
-  </div>
-
-  <!-- Tab 1: Konverter -->
-  <div id="tool-konverter" class="tool-content active">
-    <div class="tool-box">
-      <h4>Konverter Satuan</h4>
-      <div class="converter-grid">
-        <input type="number" id="valConv" placeholder="Masukkan angka" step="any">
-        <select id="fromUnit">
-          <option value="g">Gram</option>
-          <option value="kg">Kilogram</option>
-          <option value="mg">Miligram</option>
-          <option value="ml">Mililiter</option>
-          <option value="l">Liter</option>
-          <option value="cm">Centimeter</option>
-          <option value="m">Meter</option>
-          <option value="mm">MiliMeter</option>
-          <option value="inch">Inch</option>
-        </select>
-        <span style="font-size:20px">→</span>
-        <select id="toUnit">
-          <option value="kg">Kilogram</option>
-          <option value="g">Gram</option>
-          <option value="mg">Miligram</option>
-          <option value="l">Liter</option>
-          <option value="ml">Mililiter</option>
-          <option value="m">Meter</option>
-          <option value="mm">MiliMeter</option>
-          <option value="cm">Centimeter</option>
-          <option value="inch">Inch</option>
-        </select>
-        <button class="btn-accent" onclick="hitungKonversi()">Convert</button>
-      </div>
-      <div id="hasilConv" class="hasil-box"></div>
-    </div>
-  </div>
-
-  <!-- Tab 2: Persen -->
-  <div id="tool-persen" class="tool-content">
-    <div class="tool-box">
-      <h4>Persentase Cepat - Diskon%</h4>
-      <input type="number" id="valPersen" placeholder="Harga awal">
-      <input type="number" id="persen" placeholder="Diskon %">
-      <button class="btn-accent" onclick="hitungPersen()">Hitung</button>
-      <div id="hasilPersen" class="hasil-box"></div>
-    </div>
-  </div>
-
-  <!-- Tab 3: Massa -->
-  <div id="tool-massa" class="tool-content">
-    <div class="tool-box">
-      <h4>Massa ke Volume - Butuh Densitas</h4>
-      <input type="number" id="kgInput" placeholder="Berat kg" step="any">
-      <select id="bahan">
-        <option value="1">Air - 1.0 kg/L</option>
-        <option value="0.92">Minyak Goreng - 0.92 kg/L</option>
-        <option value="1.03">Susu - 1.03 kg/L</option>
-        <option value="13.6">Merkuri - 13.6 kg/L</option>
-        <option value="0.79">Alkohol - 0.79 kg/L</option>
-      </select>
-      <button class="btn-accent" onclick="kgKeLiter()">Hitung</button>
-      <div id="hasilKgLiter" class="hasil-box"></div>
-    </div>
-  </div>
+  </section>
 
 </div>
 
-<script src="advanced.js"></script>
+<script src="advanced.js?v=4"></script>
+<script src="advanced-tools.js?v=4" onerror="window.__toolsError = 'file advanced-tools.js tidak ditemukan'"></script>
+<script src="advanced-qr.js?v=4" onerror="window.__moduleError['advanced-qr.js'] = 'file advanced-qr.js tidak ditemukan'"></script>
+<script src="pwa.js?v=1"></script>
 </body>
 </html>

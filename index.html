@@ -2,172 +2,265 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Multi Tool</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b57aff">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Multi Tool">
+<title>Multi Function</title>
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <div class="app">
+
+  <!-- Bilah atas: tombol kembali (hanya di dalam Tools) dan tema -->
   <div class="theme-toggle">
-    <div class="left-btns">
-      <button onclick="window.location.href='advanced.html'">⚙️ Advanced</button>
-    </div>
-    <div class="tab-separator"></div>
+    <button id="backHome" class="hidden" onclick="keBeranda()">← Beranda</button>
+    <span class="spacer"></span>
     <button onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('kalkulator', event)">Kalkulator</button>
-    <button class="tab" onclick="switchTab('statistikDasar', event)">Stat Dasar</button>
-    <button class="tab" onclick="switchTab('statistikLanjut', event)">Data Persentil</button>
-    <button class="tab" onclick="switchTab('diagram', event)">Diagram</button>
+  <!-- ==================== LAYAR UTAMA ==================== -->
+  <section id="viewHome">
+    <h1><span class="t-ico">🧰</span> Multi Function</h1>
+    <p class="sub">Kalkulator, catatan, diagram, dan permainan di satu tempat</p>
+    <p class="tanggal" id="homeTanggal"></p>
 
-
-    <button class="tab" onclick="switchTab('suhu', event)">Suhu</button>
-    <button class="tab" onclick="switchTab('uang', event)">Uang</button>
-    <button class="tab" onclick="switchTab('catatanTodo', event)">Catatan/To-Do</button>
-    <button class="tab" onclick="switchTab('stopwatch', event)">Stopwatch</button>
-      <button class="tab game-tab" onclick="window.location.href='catur.html'">♞ Main Catur</button>
-  </div>
-
-  <!-- KALKULATOR -->
-  <div id="kalkulator" class="tab-content active">
-    <input type="text" id="angka1" placeholder="Angka pertama">
-    <select id="operator">
-      <option value="+">+</option>
-      <option value="-">-</option>
-      <option value="*">×</option>
-      <option value="/">÷</option>
-      <option value="**">Pangkat</option>
-      <option value="sqrt">Akar</option>
-      <option value="lingkaran">Lingkaran</option>
-      <option value="kubus">Kubus</option>
-    </select>
-    <input type="text" id="angka2" placeholder="Angka kedua">
-    <button onclick="hitung()">Hitung</button>
-    <div id="hasil" class="hasil" style="display:none;"></div>
-    <button onclick="tampilHistory()">Lihat History</button>
-    <button onclick="clearHistory()">Hapus History</button>
-    <div id="history" class="hasil" style="display:none;"></div>
-  </div>
-
-  <!-- STATISTIK DASAR -->
-  <div id="statistikDasar" class="tab-content">
-    <input type="text" id="dataDasar" placeholder="Data: 1,2,3,4,5">
-    <input type="text" id="labelDasar" placeholder="Label opsional: A,B,C,D,E">
-    <button onclick="hitungStatistikDasar()">Hitung</button>
-    <div id="hasilStatistikDasar" class="hasil" style="display:none;"></div>
-  </div>
-
-  <!-- STATISTIK LANJUT -->
-  <div id="statistikLanjut" class="tab-content">
-    <input type="text" id="dataStatistik" placeholder="Data: 1,2,3,4,5,6,7,8">
-    <input type="text" id="persentilInput" placeholder="Persentil opsional: 10,90">
-    <button onclick="hitungStatistikLanjut()">Hitung</button>
-    <div id="hasilStatistikLanjut" class="hasil" style="display:none;"></div>
-    <div id="langkahStatistik" class="hasil" style="display:none; margin-top:15px;"></div>
-  </div>
-
-  <!-- DIAGRAM -->
-  <div id="diagram" class="tab-content">
-    <input type="text" id="judulDiagram" placeholder="Judul Diagram">
-    <input type="text" id="labelData" placeholder="Label: Apel,Jeruk,Mangga">
-    <input type="text" id="nilaiData" placeholder="Nilai: 10,15,8">
-    <select id="tipeDiagram">
-      <option value="bar">Bar Chart</option>
-      <option value="pie">Pie Chart</option>
-    </select>
-    <select id="paletWarna">
-      <option value="catppuccin">Catppuccin</option>
-      <option value="pastel">Pastel</option>
-      <option value="neon">Neon</option>
-      <option value="monokrom">Monokrom</option>
-      <option value="cyberpunk">Cyberpunk</option>
-      <option value="toxico">Toxico</option>
-      <option value="sunset">Sunset</option>
-      <option value="galaxy">Galaxy</option>
-      <option value="candy">Candy</option>
-    </select>
-    <select id="bgDiagram">
-      <option value="gelap">Background Gelap</option>
-      <option value="terang">Background Terang</option>
-    </select>
-    <button onclick="gambarDiagram()">Gambar Diagram</button>
-    <div id="chartContainer">
-      <canvas id="canvasDiagram" width="380" height="220"></canvas>
+    <div class="home-grid">
+      <a class="home-card utama" href="#tools">
+        <span class="hc-ico">🧰</span>
+        <span class="hc-teks"><b>Tools</b><small>Kalkulator, statistik, diagram, konversi suhu & uang, catatan, stopwatch</small></span>
+        <span class="hc-panah">›</span>
+      </a>
+      <a class="home-card" href="advanced.html">
+        <span class="hc-ico">⚙️</span>
+        <span class="hc-teks"><b>Advanced Tools</b><small>Tanggal, QR Code, sandi, timer, warna, pengacak, dan lainnya</small></span>
+        <span class="hc-panah">›</span>
+      </a>
+      <a class="home-card" href="catur.html">
+        <span class="hc-ico">♞</span>
+        <span class="hc-teks"><b>Game Catur</b><small>Main berdua atau lawan bot, lengkap dengan jam dan riwayat langkah</small></span>
+        <span class="hc-panah">›</span>
+      </a>
     </div>
-    <button onclick="exportPNG()">Export PNG</button>
-    <button onclick="exportJPG()">Export JPG</button>
-  </div>
 
-  <!-- SUHU -->
-  <div id="suhu" class="tab-content">
-    <input type="text" id="suhuInput" placeholder="Masukkan suhu">
-    <select id="suhuFrom">
-      <option value="C">Celcius</option>
-      <option value="F">Fahrenheit</option>
-      <option value="K">Kelvin</option>
-    </select>
-    <select id="suhuTo">
-      <option value="F">Fahrenheit</option>
-      <option value="C">Celcius</option>
-      <option value="K">Kelvin</option>
-    </select>
-    <button onclick="konversiSuhu()">Konversi</button>
-    <div id="hasilSuhu" class="hasil" style="display:none;"></div>
-  </div>
-
-  <!-- UANG -->
-  <div id="uang" class="tab-content">
-    <input type="text" id="uangInput" placeholder="Jumlah uang">
-    <select id="uangFrom">
-      <option value="IDR">IDR</option>
-      <option value="USD">USD</option>
-      <option value="EUR">EUR</option>
-      <option value="JPY">JPY</option>
-      <option value="SGD">SGD</option>
-    </select>
-    <select id="uangTo">
-      <option value="USD">USD</option>
-      <option value="IDR">IDR</option>
-      <option value="EUR">EUR</option>
-      <option value="JPY">JPY</option>
-      <option value="SGD">SGD</option>
-    </select>
-    <button onclick="konversiUang()">Konversi</button>
-    <div id="hasilUang" class="hasil" style="display:none;"></div>
-  </div>
-
-  <!-- CATATAN + TO-DO GABUNG -->
-  <div id="catatanTodo" class="tab-content">
-    <input type="text" id="taskInput" placeholder="Tambah tugas/catatan...">
-    <button onclick="addTask()">Tambah</button>
-    <ul id="taskList"></ul>
-
-    <hr style="margin:20px 0; border:0; border-top:1px solid #333;">
-
-    <h4>📝 Catatan Panjang</h4>
-    <textarea id="noteArea" rows="6" placeholder="Tulis catatan panjang di sini..."></textarea>
-    <button onclick="clearNote()">Hapus Catatan</button>
-  </div>
-
-  <!-- STOPWATCH -->
-  <div id="stopwatch" class="tab-content">
-    <div class="stopwatch-display" id="stopwatchDisplay">00:00:00.000</div>
-    <div class="stopwatch-controls">
-      <button onclick="startStopwatch()">Mulai</button>
-      <button onclick="pauseStopwatch()">Jeda</button>
-      <button onclick="resetStopwatch()">Reset</button>
-      <button onclick="lapStopwatch()">Lap</button>
+    <div id="pasangApp" class="pasang hidden">
+      <span class="pasang-ico">📲</span>
+      <div class="pasang-teks"><b>Pasang di layar utama</b><small id="pasangKet">Buka lebih cepat seperti aplikasi, dan tetap bisa dipakai tanpa internet.</small></div>
+      <div class="pasang-aksi">
+        <button class="btn-accent" id="pasangTombol">Pasang</button>
+        <button class="btn-soft" id="pasangNanti">Nanti</button>
+      </div>
     </div>
-    <div id="lapList"></div>
-  </div>
 
-  <!-- SEARCH -->
-  <div id="search" class="tab-content">
-    <input type="text" id="searchInput" placeholder="Ketik kata kunci..." oninput="doSearch()">
-    <div id="searchResults" class="hasil" style="display:none;"></div>
-  </div>
+    <div id="homeInfo" class="home-info hidden"></div>
+  </section>
+
+  <!-- ==================== DAFTAR & ISI TOOLS ==================== -->
+  <section id="viewTools" class="hidden">
+    <div id="toolsHome">
+      <h2><span class="t-ico">🧰</span> Tools</h2>
+      <input type="search" id="toolFilter" placeholder="Cari tool… (mis. suhu, catatan)" oninput="filterTools()" aria-label="Cari tool">
+      <div id="toolGrid" class="tool-grid"></div>
+      <p id="toolEmpty" class="empty hidden">Tool tidak ditemukan</p>
+    </div>
+
+    <div id="toolView" class="hidden">
+      <div class="tool-head">
+        <button class="back-btn" onclick="keDaftarTools()">← Semua tools</button>
+        <h2 id="toolTitle"></h2>
+      </div>
+
+      <!-- KALKULATOR -->
+      <div id="kalkulator" class="tool-panel hidden"><div class="tool-box">
+        <label class="lbl" for="angka1">Angka pertama</label>
+        <input type="text" id="angka1" placeholder="mis. 12, 3/4, 2 1/2, ½" inputmode="decimal" autocomplete="off">
+        <label class="lbl" for="operator">Operasi</label>
+        <select id="operator">
+          <option value="+">+ (tambah)</option>
+          <option value="-">- (kurang)</option>
+          <option value="*">× (kali)</option>
+          <option value="/">÷ (bagi)</option>
+          <option value="**">Pangkat</option>
+          <option value="sqrt">Akar kuadrat</option>
+          <option value="lingkaran">Lingkaran (jari-jari)</option>
+          <option value="kubus">Kubus (sisi)</option>
+        </select>
+        <div id="angka2Wrap">
+          <label class="lbl" for="angka2">Angka kedua</label>
+          <input type="text" id="angka2" placeholder="Angka kedua" inputmode="decimal" autocomplete="off">
+        </div>
+        <button class="btn-accent" onclick="hitung()">Hitung</button>
+        <div id="hasil" class="hasil" style="display:none;"></div>
+        <div class="two">
+          <button class="btn-soft" onclick="tampilHistory()">Lihat history</button>
+          <button class="btn-soft" onclick="clearHistory()">Hapus history</button>
+        </div>
+        <div id="history" class="hasil" style="display:none;"></div>
+      </div></div>
+
+      <!-- STATISTIK DASAR -->
+      <div id="statistikDasar" class="tool-panel hidden"><div class="tool-box">
+        <label class="lbl" for="dataDasar">Data (pisahkan dengan koma)</label>
+        <input type="text" id="dataDasar" placeholder="1,2,3,4,5" autocomplete="off">
+        <label class="lbl" for="labelDasar">Label (opsional)</label>
+        <input type="text" id="labelDasar" placeholder="A,B,C,D,E" autocomplete="off">
+        <button class="btn-accent" onclick="hitungStatistikDasar()">Hitung</button>
+        <div id="hasilStatistikDasar" class="hasil" style="display:none;"></div>
+      </div></div>
+
+      <!-- STATISTIK LANJUT -->
+      <div id="statistikLanjut" class="tool-panel hidden"><div class="tool-box">
+        <label class="lbl" for="dataStatistik">Data (pisahkan dengan koma)</label>
+        <input type="text" id="dataStatistik" placeholder="1,2,3,4,5,6,7,8" autocomplete="off">
+        <label class="lbl" for="persentilInput">Persentil (opsional)</label>
+        <input type="text" id="persentilInput" placeholder="10,90" autocomplete="off">
+        <button class="btn-accent" onclick="hitungStatistikLanjut()">Hitung</button>
+        <div id="hasilStatistikLanjut" class="hasil" style="display:none;"></div>
+        <div id="langkahStatistik" class="hasil" style="display:none; margin-top:15px;"></div>
+      </div></div>
+
+      <!-- DIAGRAM -->
+      <div id="diagram" class="tool-panel hidden"><div class="tool-box">
+        <label class="lbl" for="judulDiagram">Judul</label>
+        <input type="text" id="judulDiagram" placeholder="Judul diagram" autocomplete="off">
+        <label class="lbl" for="labelData">Label (pisahkan dengan koma)</label>
+        <input type="text" id="labelData" placeholder="Apel,Jeruk,Mangga" autocomplete="off">
+        <label class="lbl" for="nilaiData">Nilai (pisahkan dengan koma)</label>
+        <input type="text" id="nilaiData" placeholder="10,15,8" autocomplete="off">
+        <div class="two">
+          <div><label class="lbl" for="tipeDiagram">Jenis</label>
+            <select id="tipeDiagram">
+              <option value="bar">Bar Chart</option>
+              <option value="line">Line Chart</option>
+              <option value="pie">Pie Chart</option>
+              <option value="donut">Donut Chart</option>
+            </select></div>
+          <div><label class="lbl" for="urutData">Urutan</label>
+            <select id="urutData">
+              <option value="asli">Sesuai input</option>
+              <option value="desc">Terbesar → terkecil</option>
+              <option value="asc">Terkecil → terbesar</option>
+              <option value="az">Label A–Z</option>
+            </select></div>
+          <div><label class="lbl" for="paletWarna">Warna</label>
+            <select id="paletWarna">
+              <option value="catppuccin">Catppuccin</option>
+              <option value="pastel">Pastel</option>
+              <option value="neon">Neon</option>
+              <option value="monokrom">Monokrom</option>
+              <option value="cyberpunk">Cyberpunk</option>
+              <option value="toxico">Toxico</option>
+              <option value="sunset">Sunset</option>
+              <option value="galaxy">Galaxy</option>
+              <option value="candy">Candy</option>
+            </select></div>
+          <div><label class="lbl" for="bgDiagram">Latar</label>
+            <select id="bgDiagram">
+              <option value="gelap">Gelap</option>
+              <option value="terang">Terang</option>
+            </select></div>
+        </div>
+        <div class="two">
+          <button class="btn-accent" onclick="gambarDiagram()">Gambar diagram</button>
+          <button class="btn-soft" onclick="isiContohDiagram()">Isi contoh data</button>
+        </div>
+        <div id="chartContainer">
+          <canvas id="canvasDiagram" width="380" height="220" role="img" aria-label="Diagram belum digambar"></canvas>
+        </div>
+        <div class="three btn-baris">
+          <button class="btn-soft" onclick="exportPNG()">⬇ PNG</button>
+          <button class="btn-soft" onclick="exportJPG()">⬇ JPG</button>
+          <button class="btn-soft" onclick="salinGambar()">📋 Salin</button>
+        </div>
+        <div id="diagramStatus" role="status" aria-live="polite"></div>
+      </div></div>
+
+      <!-- SUHU -->
+      <div id="suhu" class="tool-panel hidden"><div class="tool-box">
+        <label class="lbl" for="suhuInput">Suhu</label>
+        <input type="text" id="suhuInput" placeholder="Masukkan suhu" inputmode="decimal" autocomplete="off">
+        <div class="swap-row">
+          <div class="grow"><label class="lbl" for="suhuFrom">Dari</label>
+            <select id="suhuFrom">
+              <option value="C">Celcius</option>
+              <option value="F">Fahrenheit</option>
+              <option value="K">Kelvin</option>
+            </select></div>
+          <button class="icon-btn" onclick="tukarSuhu()" aria-label="Tukar satuan" title="Tukar">⇄</button>
+          <div class="grow"><label class="lbl" for="suhuTo">Ke</label>
+            <select id="suhuTo">
+              <option value="F">Fahrenheit</option>
+              <option value="C">Celcius</option>
+              <option value="K">Kelvin</option>
+            </select></div>
+        </div>
+        <button class="btn-accent" onclick="konversiSuhu()">Konversi</button>
+        <div id="hasilSuhu" class="hasil" style="display:none;"></div>
+      </div></div>
+
+      <!-- UANG -->
+      <div id="uang" class="tool-panel hidden"><div class="tool-box">
+        <label class="lbl" for="uangInput">Jumlah uang</label>
+        <input type="text" id="uangInput" placeholder="Jumlah uang" inputmode="decimal" autocomplete="off">
+        <div class="swap-row">
+          <div class="grow"><label class="lbl" for="uangFrom">Dari</label>
+            <select id="uangFrom">
+              <option value="IDR">IDR</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="JPY">JPY</option>
+              <option value="SGD">SGD</option>
+            </select></div>
+          <button class="icon-btn" onclick="tukarUang()" aria-label="Tukar mata uang" title="Tukar">⇄</button>
+          <div class="grow"><label class="lbl" for="uangTo">Ke</label>
+            <select id="uangTo">
+              <option value="USD">USD</option>
+              <option value="IDR">IDR</option>
+              <option value="EUR">EUR</option>
+              <option value="JPY">JPY</option>
+              <option value="SGD">SGD</option>
+            </select></div>
+        </div>
+        <button class="btn-accent" onclick="konversiUang()">Konversi</button>
+        <div id="hasilUang" class="hasil" style="display:none;"></div>
+        <p class="catatan-kecil">Kurs di sini perkiraan tetap, bukan kurs real-time. Untuk transaksi, cek kurs resmi.</p>
+      </div></div>
+
+      <!-- CATATAN + TO-DO -->
+      <div id="catatanTodo" class="tool-panel hidden"><div class="tool-box">
+        <label class="lbl" for="taskInput">Tugas baru</label>
+        <div class="tambah-baris">
+          <input type="text" id="taskInput" placeholder="Tambah tugas/catatan..." autocomplete="off">
+          <button class="btn-accent" onclick="addTask()">Tambah</button>
+        </div>
+        <div id="taskInfo" class="task-info"></div>
+        <ul id="taskList"></ul>
+
+        <label class="lbl" for="noteArea">📝 Catatan panjang <span id="noteStatus" class="note-status"></span></label>
+        <textarea id="noteArea" rows="6" placeholder="Tulis catatan panjang di sini… (tersimpan otomatis)"></textarea>
+        <button class="btn-soft" onclick="clearNote()">Hapus catatan</button>
+      </div></div>
+
+      <!-- STOPWATCH -->
+      <div id="stopwatch" class="tool-panel hidden"><div class="tool-box">
+        <div class="stopwatch-display" id="stopwatchDisplay">00:00:00.000</div>
+        <div class="stopwatch-controls">
+          <button class="btn-accent" onclick="startStopwatch()">Mulai</button>
+          <button class="btn-soft" onclick="pauseStopwatch()">Jeda</button>
+          <button class="btn-soft" onclick="resetStopwatch()">Reset</button>
+          <button class="btn-soft" onclick="lapStopwatch()">Lap</button>
+        </div>
+        <div id="lapList"></div>
+      </div></div>
+    </div>
+  </section>
+
 </div>
-<script src="script.js"></script>
+<script src="script.js?v=5"></script>
+<script src="pwa.js?v=1"></script>
 </body>
 </html>

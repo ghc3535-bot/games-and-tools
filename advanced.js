@@ -1,28 +1,174 @@
-// ===== THEME =====
-document.addEventListener("DOMContentLoaded", () => {
-    const savedTheme = localStorage.getItem('theme');
-    const btn = document.getElementById('themeBtn');
-    if (savedTheme === 'dark') {
-        document.body.setAttribute('data-theme', 'dark');
-        if (btn) btn.innerText = '☀️ Light Mode';
-    }
-});
+// ==========================================================================
+// ADVANCED TOOLS — logika halaman
+// Urutan: 1 Pembantu  2 Tema  3 Navigasi  4 Cari  5 Gambar  6 Game  7 Hadist  8 Tools lama
+// Tool baru ada di advanced-tools.js
+// ==========================================================================
 
-function toggleTheme() {
-    const body = document.body;
-    const btn = document.getElementById('themeBtn');
-    if (body.hasAttribute('data-theme')) {
-        body.removeAttribute('data-theme');
-        btn.innerText = '🌙 Dark Mode';
-        localStorage.setItem('theme', 'light');
-    } else {
-        body.setAttribute('data-theme', 'dark');
-        btn.innerText = '☀️ Light Mode';
-        localStorage.setItem('theme', 'dark');
-    }
+// ===== 1. PEMBANTU =====
+const $ = id => document.getElementById(id);
+
+// catat kegagalan saat memuat advanced-tools.js (file tidak ada / error saat dibaca)
+// supaya bisa ditampilkan ke pengguna. Dari file:// browser menyembunyikan detail error, jadi semua error saat muat dicatat.
+window.__toolsError = null;      // diisi atribut onerror pada <script> kalau file tidak bisa dibuka
+window.__loadErrors = [];
+window.__moduleError = {};      // file tambahan yang gagal dibuka: { 'advanced-qr.js': 'penyebab' }
+window.addEventListener('error', e => { if (e.message) window.__loadErrors.push(e.message); });
+
+let _audio = null;
+function getAudio() {
+    try {
+        if (!_audio) _audio = new (window.AudioContext || window.webkitAudioContext)();
+        if (_audio.state === 'suspended') _audio.resume();
+    } catch (e) { return null; }
+    return _audio;
 }
 
-// ===== SEARCH =====
+// salin ke clipboard (dengan cadangan untuk browser lama); tombol sementara berubah jadi "Tersalin ✓"
+async function copyText(text, btn) {
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; }
+    catch (e) {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+            document.body.appendChild(ta); ta.select();
+            ok = document.execCommand('copy'); ta.remove();
+        } catch (e2) { ok = false; }
+    }
+    if (btn) {
+        if (btn.dataset.old === undefined) btn.dataset.old = btn.textContent;
+        btn.textContent = ok ? 'Tersalin ✓' : 'Gagal menyalin';
+        clearTimeout(btn._t);
+        btn._t = setTimeout(() => { btn.textContent = btn.dataset.old; }, 1400);
+    }
+    return ok;
+}
+document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copy]');
+    if (b) copyText(b.dataset.copy, b);
+});
+
+// ===== 2. TEMA (kunci 'theme' dipakai bersama halaman lain) =====
+function applyTheme(dark) {
+    if (dark) document.body.setAttribute('data-theme', 'dark');
+    else document.body.removeAttribute('data-theme');
+    const btn = $('themeBtn');
+    if (btn) btn.innerText = dark ? '☀️ Light Mode' : '🌙 Dark Mode';
+}
+function toggleTheme() {
+    const dark = !document.body.hasAttribute('data-theme');
+    applyTheme(dark);
+    try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+}
+
+// ===== 3. NAVIGASI =====
+function switchTab(tab, e) {
+    const el = $('tab-' + tab);
+    if (!el) return;
+    document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
+    el.classList.add('active');
+    if (tab === 'hadist') filterHadist();
+    try { localStorage.setItem('adv_tab', tab); } catch (err) {}
+}
+
+// daftar tool tidak bisa ditampilkan: beri tahu penyebab & langkah perbaikan (bukan layar kosong)
+function tampilGalatTools() {
+    const galat = window.__loadErrors.length ? window.__loadErrors[window.__loadErrors.length - 1] : '';
+    const sebab = window.__toolsError || (galat ? 'file termuat tetapi error: ' + galat : 'file belum termuat');
+    $('toolFilter').classList.add('hidden');
+    $('toolEmpty').classList.add('hidden');
+    $('toolGrid').innerHTML =
+        `<div class="galat-box"><b>⚠️ Daftar tool gagal dimuat</b>` +
+        `<p>Penyebab: <code>${escapeHTML(String(sebab))}</code></p>` +
+        `<ol><li>Pastikan file <code>advanced-tools.js</code> ada di folder yang sama dengan <code>advanced.html</code>.</li>` +
+        `<li>Muat ulang tanpa cache (tahan tombol refresh, atau hapus cache browser).</li></ol>` +
+        `<button class="btn-accent" onclick="location.reload()">Muat ulang</button></div>`;
+}
+
+function renderToolGrid() {
+    if (typeof TOOLS === 'undefined') { tampilGalatTools(); return; }
+    $('toolGrid').innerHTML = TOOLS.map(t =>
+        `<button class="tool-card" data-id="${t.id}" onclick="openTool('${t.id}')">` +
+        `<span class="ico">${t.icon}</span><span class="nama">${t.nama}</span><span class="desk">${t.desk}</span></button>`
+    ).join('');
+}
+
+function filterTools() {
+    const kartu = document.querySelectorAll('.tool-card');
+    if (!kartu.length) return;              // daftar belum ada: jangan tampilkan "tidak ditemukan"
+    const q = $('toolFilter').value.trim().toLowerCase();
+    let n = 0;
+    kartu.forEach(c => {
+        const t = TOOLS.find(x => x.id === c.dataset.id);
+        const hit = !q || (t.nama + ' ' + t.desk + ' ' + t.kata).toLowerCase().includes(q);
+        c.classList.toggle('hidden', !hit);
+        if (hit) n++;
+    });
+    $('toolEmpty').classList.toggle('hidden', n > 0);
+}
+
+// tool yang butuh file tambahan (mis. QR Code → advanced-qr.js): kalau file-nya tidak ada, jelaskan di panelnya
+function tampilGalatPanel(id, file) {
+    const panel = $('tool-' + id);
+    panel.querySelectorAll(':scope > .galat-box').forEach(x => x.remove());
+    Array.from(panel.children).forEach(el => el.classList.add('hidden'));
+    const sebab = window.__moduleError && window.__moduleError[file] ? window.__moduleError[file] : 'file tidak ditemukan atau belum termuat';
+    const box = document.createElement('div');
+    box.className = 'galat-box';
+    box.innerHTML = `<b>⚠️ Tool ini belum bisa dipakai</b><p>Penyebab: <code>${escapeHTML(String(sebab))}</code></p>` +
+        `<ol><li>Pastikan file <code>${escapeHTML(file)}</code> ada di folder yang sama dengan <code>advanced.html</code>.</li>` +
+        `<li>Muat ulang tanpa cache.</li></ol><button class="btn-accent" onclick="location.reload()">Muat ulang</button>`;
+    panel.appendChild(box);
+}
+
+function openTool(id) {
+    if (typeof TOOLS === 'undefined') return;
+    const t = TOOLS.find(x => x.id === id);
+    if (!t) return;
+    $('toolHome').classList.add('hidden');
+    $('toolView').classList.remove('hidden');
+    document.querySelectorAll('.tool-panel').forEach(p => p.classList.toggle('hidden', p.id !== 'tool-' + id));
+    $('toolTitle').innerHTML = `<span class="t-ico">${t.icon}</span> ${t.nama}`;   // ikon di luar efek gradasi supaya tetap berwarna
+    if (t.butuh && typeof window[t.butuh] !== 'function') {
+        tampilGalatPanel(id, t.file);
+        try { history.replaceState(null, '', '#' + id); } catch (e) {}
+        window.scrollTo({ top: 0 });
+        return;
+    }
+    try { history.replaceState(null, '', '#' + id); } catch (e) {}
+    if (typeof TOOL_OPEN !== 'undefined' && typeof TOOL_OPEN[id] === 'function') TOOL_OPEN[id]();
+    window.scrollTo({ top: 0 });
+}
+
+function closeTool() {
+    $('toolView').classList.add('hidden');
+    $('toolHome').classList.remove('hidden');
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+}
+
+// pilih mode di dalam satu tool: tombol segmen + panel "<awalan>-<mode>"
+function segPilih(prefix, mode, btn) {
+    const seg = btn.closest('.seg');
+    seg.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    seg.parentElement.querySelectorAll('.seg-pane').forEach(p => p.classList.toggle('hidden', p.id !== prefix + '-' + mode));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    let saved = null, tab = null;
+    try { saved = localStorage.getItem('theme'); tab = localStorage.getItem('adv_tab'); } catch (e) {}
+    applyTheme(saved === 'dark');
+    renderToolGrid();
+    // judul mengikuti jumlah data yang benar-benar ada (bukan angka tetap)
+    $('hadistInfo').textContent = `${hadistData.hadist.length} hadist · ${hadistData.dalil.length} dalil`;
+    $('hadistTabBtn').textContent = `Hadist (${hadistData.hadist.length})`;
+    $('dalilTabBtn').textContent = `Dalil Al-Quran (${hadistData.dalil.length})`;
+    if (tab && $('tab-' + tab)) switchTab(tab);
+    const id = location.hash.slice(1);                    // contoh: advanced.html#sandi
+    if (typeof TOOLS !== 'undefined' && TOOLS.some(t => t.id === id)) { switchTab('tools'); openTool(id); }
+});
+
+// ===== 4. CARI =====
 function doSearch() {
     const query = document.getElementById("searchInput").value.trim().toLowerCase();
     const resultsDiv = document.getElementById("searchResults");
@@ -51,7 +197,7 @@ function doSearch() {
     });
 
     if (results.length === 0) {
-        resultsDiv.innerHTML = `Gak ketemu hasil untuk "<b>${query}</b>"`;
+        resultsDiv.innerHTML = `Gak ketemu hasil untuk "<b>${escapeHTML(query)}</b>"`;
     } else {
         resultsDiv.innerHTML = `<b>Ditemukan ${results.length} hasil:</b>\n\n` + results.join("\n\n");
     }
@@ -69,7 +215,7 @@ function highlightText(text, query) {
     return safe.replace(new RegExp(`(${q})`, "gi"), "<mark>$1</mark>");
 }
 
-// ===== IMAGE GENERATOR =====
+// ===== 5. GAMBAR =====
 function generateImage() {
   const prompt = document.getElementById("imagePrompt").value.trim();
   const resultDiv = document.getElementById("imageResult");
@@ -79,13 +225,18 @@ function generateImage() {
     return;
   }
 
+  const petunjuk = { square: "", landscape: ", landscape 16:9 composition", vertical: ", vertical 9:16 composition" };
+  const finalPrompt = prompt + (petunjuk[document.getElementById("imageOrientation").value] || "");
+
   resultDiv.innerHTML = `
-    <p>Pilih mau buka mana:</p>
-    <button id="btnPixAI" style="margin:5px;padding:8px 12px;">Buka PixAI</button>
-    <button id="btnCraiyon" style="margin:5px;padding:8px 12px;">Buka Craiyon</button>
+    <p>Pilih situs untuk dibuka:</p>
+    <div class="two">
+      <button id="btnPixAI" class="btn-accent">Buka PixAI</button>
+      <button id="btnCraiyon" class="btn-accent">Buka Craiyon</button>
+    </div>
   `;
-  document.getElementById("btnPixAI").addEventListener("click", () => openPixAI(prompt));
-  document.getElementById("btnCraiyon").addEventListener("click", () => openCraiyon(prompt));
+  document.getElementById("btnPixAI").addEventListener("click", () => openPixAI(finalPrompt));
+  document.getElementById("btnCraiyon").addEventListener("click", () => openCraiyon(finalPrompt));
 }
 
 async function openPixAI(prompt) {
@@ -111,6 +262,7 @@ function openCraiyon(prompt) {
 }
 
 // ===== TIC TAC TOE =====
+// ===== 6. GAME: CATUR BULAN =====
 let tttBoard = ["", "", "", "", "", "", "", "", ""];
 let tttCurrentPlayer = "X";
 let tttGameActive = false;
@@ -120,23 +272,23 @@ let tttTimer = null;
 let tttTimeLeft = { X: 5, O: 5 };
 const TTT_TIME_LIMIT = 5;
 
-// Audio beep
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
+// Audio beep (AudioContext dibuat saat pertama dipakai, bukan saat halaman dibuka)
 function playBeep() {
-    const oscillator = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
+    const ac = getAudio();
+    if (!ac) return;
+    const oscillator = ac.createOscillator();
+    const gainNode = ac.createGain();
     oscillator.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
+    gainNode.connect(ac.destination);
     oscillator.type = "square";
-    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    oscillator.frequency.setValueAtTime(800, ac.currentTime);
+    gainNode.gain.setValueAtTime(0.2, ac.currentTime);
     oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.1);
+    oscillator.stop(ac.currentTime + 0.1);
 }
 
 function startGame() {
-    if (audioCtx.state === "suspended") audioCtx.resume();
+    getAudio();
 
     document.getElementById("ttt-setup").style.display = "none";
     document.getElementById("ttt-game").style.display = "block";
@@ -305,7 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playAgainBtn.addEventListener("click", playAgain);
     }
 });
-// ===== HADIST & DALIL =====
+// ===== 7. HADIST & DALIL =====
 let currentHadistTab = 'hadist';
 
 const hadistData = {
@@ -340,14 +492,12 @@ function renderHadist(data) {
   const listEl = document.getElementById('hadistList');
   if (!listEl) return;
 
-  listEl.innerHTML = '';
   if (data.length === 0) {
-    listEl.innerHTML = '<p style="text-align:center; color:var(--text-secondary)">Hadist/dalil tidak ditemukan</p>';
+    listEl.innerHTML = '<p class="empty">Hadist/dalil tidak ditemukan</p>';
     return;
   }
 
-  data.forEach(item => {
-    listEl.innerHTML += `
+  listEl.innerHTML = data.map(item => `
       <div class="hadist-item">
         ${item.kategori ? `<span class="hadist-kategori">${item.kategori}</span>` : ''}
         <div class="hadist-arab">${item.arab}</div>
@@ -355,9 +505,7 @@ function renderHadist(data) {
         ${item.perawi ? `<div class="hadist-detail"><b>Perawi:</b> ${item.perawi}</div>` : ''}
         ${item.sanad ? `<div class="hadist-detail"><b>Sanad:</b> ${item.sanad}</div>` : ''}
         <div class="hadist-sumber">${item.sumber}</div>
-      </div>
-    `;
-  });
+      </div>`).join('');
 }
 
 function filterHadist() {
@@ -374,67 +522,6 @@ function filterHadist() {
   renderHadist(filtered);
 }
 
-function formatAngka(n) {
-    if (n === 0) return "0";
-    const abs = Math.abs(n);
-    if (abs >= 1e-4 && abs < 1e12) return String(parseFloat(n.toPrecision(10)));
-    return n.toExponential(4);
-}
-
-function hitungKonversi() {
-    const val = parseFloat(document.getElementById('valConv').value);
-    const from = document.getElementById('fromUnit').value;
-    const to = document.getElementById('toUnit').value;
-    const box = document.getElementById('hasilConv');
-    box.style.display = 'block';
-
-    if (isNaN(val)) { box.textContent = 'Masukkan angka yang valid!'; return; }
-
-    const satuan = {
-        massa: {g: 1, kg: 1000, mg: 0.001},
-        volume: {ml: 1, l: 1000},
-        panjang: {cm: 1, m: 100, inch: 2.54, mm: 0.1}
-    };
-    const jenis = Object.keys(satuan).find(k => from in satuan[k] && to in satuan[k]);
-    if (!jenis) { box.textContent = 'Satuan gak cocok (beda jenis, mis. massa ke panjang)'; return; }
-
-    const hasil = val * satuan[jenis][from] / satuan[jenis][to];
-    box.innerHTML = `${val} ${from} = <b>${formatAngka(hasil)} ${to}</b>`;
-}
-
-function hitungPersen() {
-    const harga = parseFloat(document.getElementById('valPersen').value);
-    const diskon = parseFloat(document.getElementById('persen').value);
-    const boxP = document.getElementById('hasilPersen');
-    if (isNaN(harga) || isNaN(diskon)) { boxP.style.display = 'block'; boxP.textContent = 'Isi harga awal dan diskon dengan angka!'; return; }
-    let potongan = harga * diskon / 100;
-    let total = harga - potongan;
-
-    let box = document.getElementById('hasilPersen');
-    box.style.display = 'block';
-    box.innerHTML = `Diskon ${diskon}% = Rp ${potongan.toLocaleString('id-ID')}<br>Total bayar: <b>Rp ${total.toLocaleString('id-ID')}</b>`;
-}
-function kgKeLiter() {
-    const kg = parseFloat(document.getElementById('kgInput').value);
-    const densitas = parseFloat(document.getElementById('bahan').value);
-    if (isNaN(kg)) { const b = document.getElementById('hasilKgLiter'); b.style.display = 'block'; b.textContent = 'Masukkan berat dalam angka!'; return; }
-
-    let liter = kg / densitas;
-    let hasilText = liter % 1 === 0? liter.toFixed(0) : liter.toFixed(4);
-
-    let box = document.getElementById('hasilKgLiter');
-    box.style.display = 'block';
-    box.innerHTML = `${kg} kg = <b>${hasilText} liter</b><br><small>Densitas: ${densitas} kg/L</small>`;
-}
-// ===== TAB SWITCHER (satu versi saja) =====
-function switchTab(tabName, e) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.add('active');
-    if (e && e.target) e.target.closest('button').classList.add('active');
-    if (tabName === 'hadist') filterHadist();
-}
-
 function switchHadistTab(tab, e) {
     currentHadistTab = tab;
     document.querySelectorAll('.hadist-tab-btn').forEach(el => el.classList.remove('active'));
@@ -443,9 +530,81 @@ function switchHadistTab(tab, e) {
     renderHadist(hadistData[tab]);
 }
 
-function switchToolTab(tab, e) {
-    document.querySelectorAll('.tool-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tool-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tool-' + tab).classList.add('active');
-    if (e && e.target) e.target.closest('button').classList.add('active');
+// ===== 8. TOOLS LAMA (konverter, persen, massa -> liter) =====
+function formatAngka(n) {
+    if (n === 0) return "0";
+    const abs = Math.abs(n);
+    if (abs >= 1e-4 && abs < 1e12) return String(parseFloat(n.toPrecision(10)));
+    return n.toExponential(4);
+}
+
+// pesan di kotak hasil; `live` = dihitung otomatis saat mengetik (kolom kosong = sembunyikan, bukan error)
+function tampilHasil(id, html, isErr) {
+    const box = $(id);
+    box.classList.add('show');
+    box.style.display = 'block';
+    box.innerHTML = isErr ? `<span class="err">${html}</span>` : html;
+}
+function sembunyiHasil(id) {
+    const box = $(id);
+    box.classList.remove('show');
+    box.style.display = 'none';
+}
+
+function hitungKonversi(live) {
+    const raw = $('valConv').value;
+    const val = parseFloat(raw);
+    const from = $('fromUnit').value;
+    const to = $('toUnit').value;
+
+    if (isNaN(val)) {
+        if (live === true && raw === '') { sembunyiHasil('hasilConv'); return; }
+        tampilHasil('hasilConv', 'Masukkan angka yang valid!', true);
+        return;
+    }
+
+    const satuan = {
+        massa: {g: 1, kg: 1000, mg: 0.001},
+        volume: {ml: 1, l: 1000},
+        panjang: {cm: 1, m: 100, inch: 2.54, mm: 0.1}
+    };
+    const jenis = Object.keys(satuan).find(k => from in satuan[k] && to in satuan[k]);
+    if (!jenis) { tampilHasil('hasilConv', 'Satuan tidak cocok (beda jenis, mis. massa ke panjang)', true); return; }
+
+    const hasil = val * satuan[jenis][from] / satuan[jenis][to];
+    tampilHasil('hasilConv', `${val} ${from} = <b>${formatAngka(hasil)} ${to}</b>`);
+}
+
+function tukarSatuan() {
+    const a = $('fromUnit'), b = $('toUnit');
+    const t = a.value; a.value = b.value; b.value = t;
+    hitungKonversi(true);
+}
+
+function hitungPersen(live) {
+    const hargaRaw = $('valPersen').value, diskonRaw = $('persen').value;
+    const harga = parseFloat(hargaRaw);
+    const diskon = parseFloat(diskonRaw);
+    if (isNaN(harga) || isNaN(diskon)) {
+        if (live === true) { sembunyiHasil('hasilPersen'); return; }
+        tampilHasil('hasilPersen', 'Isi harga awal dan diskon dengan angka!', true);
+        return;
+    }
+    const potongan = harga * diskon / 100;
+    const total = harga - potongan;
+    tampilHasil('hasilPersen', `Diskon ${diskon}% = Rp ${potongan.toLocaleString('id-ID')}<br>Total bayar: <b>Rp ${total.toLocaleString('id-ID')}</b>`);
+}
+
+function kgKeLiter(live) {
+    const raw = $('kgInput').value;
+    const kg = parseFloat(raw);
+    const densitas = parseFloat($('bahan').value);
+    if (isNaN(kg)) {
+        if (live === true && raw === '') { sembunyiHasil('hasilKgLiter'); return; }
+        tampilHasil('hasilKgLiter', 'Masukkan berat dalam angka!', true);
+        return;
+    }
+    const liter = kg / densitas;
+    const hasilText = liter % 1 === 0 ? liter.toFixed(0) : liter.toFixed(4);
+    tampilHasil('hasilKgLiter', `${kg} kg = <b>${hasilText} liter</b><br><small>Densitas: ${densitas} kg/L</small>`);
 }

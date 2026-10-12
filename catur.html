@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#b57aff">
+<link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Multi Tool">
 <title>Game Catur</title>
 <link rel="stylesheet" href="catur.css">
 </head>
@@ -15,41 +22,94 @@
     <button onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
   </div>
 
+  <div id="resumeBanner" class="resume hidden" role="status">
+    <span>💾 Game tersimpan: <strong id="resumeInfo"></strong></span>
+    <span class="resume-btns">
+      <button onclick="resumeSaved()">Lanjutkan</button>
+      <button class="ghost" onclick="discardSaved()">Buang</button>
+    </span>
+  </div>
+
   <h1>♞ Game Catur 2 Player</h1>
   <div class="mode-selector">
-    <button onclick="setGameMode('pvp')" id="btn-pvp" class="active">👥 2 Player</button>
-    <button onclick="setGameMode('bot')" id="btn-bot">🤖 Vs Bot</button>
+    <div class="mode-buttons">
+      <button onclick="setGameMode('pvp')" id="btn-pvp" class="active">👥 2 Player</button>
+      <button onclick="setGameMode('bot')" id="btn-bot">🤖 Vs Bot</button>
+    </div>
 
-    <div class="mode-label">Level:</div>
-    <select onchange="setBotDifficulty(this.value)" id="bot-level">
-      <option value="easy">Easy</option>
-      <option value="normal" selected>Normal</option>
-      <option value="hard">Hard</option>
-      <option value="insane">Insane - Magnus</option>
-    </select>
+    <div class="field">
+      <label class="mode-label" for="bot-level">Level bot</label>
+      <select onchange="setBotDifficulty(this.value)" id="bot-level">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+        <option value="insane">Insane - Magnus</option>
+      </select>
+    </div>
 
-    <div class="mode-label">Warna Bot:</div>
-    <select onchange="setBotColor(this.value)" id="bot-color">
-      <option value="b" selected>Bot Hitam</option>
-      <option value="w">Bot Putih</option>
-    </select>
+    <div class="field">
+      <label class="mode-label" for="bot-color">Warna bot</label>
+      <select onchange="setBotColor(this.value)" id="bot-color">
+        <option value="b" selected>Bot Hitam</option>
+        <option value="w">Bot Putih</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="mode-label" for="clock-base">Jam per pemain</label>
+      <select onchange="setClockBase(this.value)" id="clock-base">
+        <option value="0" selected>Tanpa jam</option>
+        <option value="1">1 menit</option>
+        <option value="3">3 menit</option>
+        <option value="5">5 menit</option>
+        <option value="10">10 menit</option>
+        <option value="15">15 menit</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="mode-label" for="clock-inc">Tambahan / langkah</label>
+      <select onchange="setClockInc(this.value)" id="clock-inc">
+        <option value="0" selected>+0 detik</option>
+        <option value="2">+2 detik</option>
+        <option value="5">+5 detik</option>
+        <option value="10">+10 detik</option>
+      </select>
+    </div>
+
+    <div class="field wide">
+      <label class="mode-label" for="anim-mode">Efek</label>
+      <select onchange="setAnimMode(this.value)" id="anim-mode">
+        <option value="on" selected>Animasi nyala</option>
+        <option value="off">Animasi mati (hemat baterai)</option>
+      </select>
+    </div>
   </div>
 
   <div id="status">Giliran: Putih</div>
 
-  <div class="board-frame pvp" id="boardFrame">
-    <div class="coords top" id="coordsTop"></div>
-    <div class="coords left" id="coordsLeft"></div>
-    <div id="board" class="pvp"></div>
-    <div class="coords right" id="coordsRight"></div>
-    <div class="coords bottom" id="coordsBottom"></div>
+  <div id="boardArea" class="board-area no-clock pvp">
+    <div class="clock-row top"><div class="clock" id="clockB"><span class="clock-who">⚫ Hitam</span><span class="clock-time">0:00</span></div></div>
+
+    <div class="board-frame pvp" id="boardFrame">
+      <div class="coords top" id="coordsTop"></div>
+      <div class="coords left" id="coordsLeft"></div>
+      <div id="board" class="pvp"></div>
+      <div class="coords right" id="coordsRight"></div>
+      <div class="coords bottom" id="coordsBottom"></div>
+    </div>
+
+    <div class="clock-row bottom"><div class="clock" id="clockW"><span class="clock-who">⚪ Putih</span><span class="clock-time">0:00</span></div></div>
   </div>
 
-  <div id="gameOverOverlay" class="hidden">
-    <div class="game-over-box">
+  <div id="gameOverOverlay" class="hidden" onclick="if (event.target === this) closeGameOver()">
+    <div class="game-over-box" role="dialog" aria-labelledby="gameOverText">
+      <button class="go-close" onclick="closeGameOver()" aria-label="Tutup">✕</button>
       <h2 id="gameOverText">Skakmat!</h2>
       <p id="gameOverSubtext">Putih menang</p>
       <button onclick="resetGame()">Main Lagi</button>
+      <button class="go-view" onclick="closeGameOver()">Lihat Papan</button>
+      <button class="go-view" onclick="undoMove()">↩ Undo langkah terakhir</button>
     </div>
   </div>
 
@@ -78,6 +138,15 @@
     </button>
   </div>
 
+  <div class="moves-panel">
+    <div class="moves-head">
+      <strong>Riwayat Langkah <span id="moveCount"></span></strong>
+      <button onclick="copyMoves()">📋 Salin</button>
+    </div>
+    <div id="moveList" class="move-list" aria-live="off"></div>
+    <div id="moveStatus" class="move-status" role="status"></div>
+  </div>
+
   <div id="captured">
     <div>Bidak Putih Dimakan: <span id="capturedWhite"></span></div>
     <div>Bidak Hitam Dimakan: <span id="capturedBlack"></span></div>
@@ -85,6 +154,8 @@
 
 </div>
 
+<script src="catur-engine.js"></script>
 <script src="catur.js"></script>
+<script src="pwa.js?v=1"></script>
 </body>
 </html>
