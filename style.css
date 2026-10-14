@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MULTI TOOL — halaman utama
+   PERKAKAS SAKU — halaman utama
    Urutan: 1 Dasar  2 Layar utama  3 Daftar tool  4 Komponen  5 Isi tool (hasil, to-do, stopwatch, diagram)
    Gaya dan warna sama dengan halaman Advanced supaya terasa satu aplikasi.
    ========================================================================== */
@@ -401,3 +401,36 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 .pasang-aksi { grid-column: 1 / -1; display: grid; grid-template-columns: 1.4fr 1fr; gap: 8px; }
 .pasang-aksi .btn-accent, .pasang-aksi .btn-soft { margin-top: 4px; padding: 11px; font-size: 15px; }
 .pasang[data-mode="ios"] .pasang-aksi { grid-template-columns: 1fr; }
+
+/* ===== TOMBOL PECAHAN (kalkulator) ===== */
+.pecahan { margin: 2px 0 10px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+.chip {
+    min-width: 46px;
+    padding: 9px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.chip:hover, .chip:active { border-color: var(--accent-1); background: var(--accent-1); color: #fff; }
+
+/* ===== VERSI & TOMBOL PERBARUI (layar utama) ===== */
+.versi { text-align: center; margin: 20px 0 0; font-size: 0.82rem; color: var(--text-secondary); }
+.tautan {
+    background: none;
+    border: none;
+    padding: 6px 4px;
+    color: var(--accent-1);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.tautan:disabled { opacity: 0.6; cursor: wait; }

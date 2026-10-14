@@ -1,15 +1,16 @@
 /* ==========================================================================
-   SERVICE WORKER — membuat Multi Tool bisa dipakai tanpa internet.
+   SERVICE WORKER — membuat Perkakas Saku bisa dipakai tanpa internet.
 
    Strategi "jaringan dulu, cache cadangan":
-   - Online (atau server lokal hidup): selalu ambil file TERBARU, lalu simpan salinannya.
+   - Online (atau server lokal hidup): selalu periksa ke server dan ambil file TERBARU (mengabaikan cache HTTP
+     browser), lalu simpan salinannya.
    - Offline / server mati / jaringan lambat (> 4 detik): pakai salinan yang tersimpan.
    Jadi kalau kamu mengganti file, versi barunya langsung tampil; tidak ada versi lama yang "nyangkut".
 
    Daftar ASSETS di bawah diunduh sekali saat pertama kali dibuka (butuh internet/server aktif),
    supaya semua halaman siap dipakai offline. Kalau kamu menambah file baru, tambahkan juga ke daftar ini.
    ========================================================================== */
-const VERSI = 'multitool-v1';
+const VERSI = 'perkakas-v1';
 const BATAS_TUNGGU_MS = 4000;
 
 const ASSETS = [
@@ -17,7 +18,7 @@ const ASSETS = [
     'advanced.html', 'advanced.css', 'advanced.js', 'advanced-tools.js', 'advanced-qr.js',
     'catur.html', 'catur.css', 'catur.js', 'catur-engine.js',
     'pwa.js', 'manifest.webmanifest',
-    'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png'
+    'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'favicon-48.png'
 ];
 
 self.addEventListener('install', event => {
@@ -57,7 +58,9 @@ const DURASI_ANGGAP_LAMBAT_MS = 30000;
 async function jaringanDulu(event) {
     const req = event.request;
     const cache = await caches.open(VERSI);
-    const jaringan = fetch(req).then(res => {
+    // cache: 'no-cache' = SELALU tanya server dulu (cukup konfirmasi 'tidak berubah' kalau memang sama).
+    // Tanpa ini, server dengan Cache-Control kuat membuat file lama terus disajikan walau sudah diganti.
+    const jaringan = fetch(req, { cache: 'no-cache' }).then(res => {
         if (res && res.ok && res.type === 'basic') event.waitUntil(simpan(cache, req, res.clone()));
         return res;
     });

@@ -159,18 +159,42 @@ const unicodeFractions = {
     '⅑': 1/9, '⅒': 0.1
 };
 
+// Membaca angka dari kolom isian. Format yang dikenali:
+//   12   1,5   1.5   .5          bilangan biasa (koma atau titik sebagai desimal)
+//   3/4   2 1/2   2 ½   2½       pecahan dan bilangan campuran (pecahan Unicode boleh menempel: 2½)
+//   -½   -2 1/2   -3/4           minus di depan berlaku untuk seluruh nilai
+// Yang tidak dikenali (mis. "1.000.000", "12abc", "--5") menghasilkan NaN supaya muncul pesan galat,
+// bukan angka yang salah diam-diam (sebelumnya "2½" terbaca 2 dan "1.000.000" terbaca 1).
+const RE_BULAT_PECAHAN = new RegExp('^(\\d+)\\s*([' + Object.keys(unicodeFractions).join('') + '])$');
+const RE_DESIMAL = /^(\d+([.,]\d*)?|[.,]\d+)([eE][+-]?\d+)?$/;
+
 function parseNumber(val) {
     if (!val) return NaN;
-    val = val.trim();
-    if (val.includes(' ')) {
-        const parts = val.split(/\s+/);
-        const whole = parseFloat(parts[0]);
+    let s = String(val).trim();
+    let tanda = 1;
+    if (s[0] === '-' || s[0] === '\u2212') { tanda = -1; s = s.slice(1).trim(); }
+    if (!s || s[0] === '-' || s[0] === '\u2212') return NaN;
+
+    let hasil;
+    const campur = s.match(RE_BULAT_PECAHAN);
+    if (campur) {
+        hasil = parseFloat(campur[1]) + unicodeFractions[campur[2]];
+    } else if (/\s/.test(s)) {
+        const parts = s.split(/\s+/);
+        if (parts.length !== 2 || !RE_DESIMAL.test(parts[0])) return NaN;
+        const whole = parseFloat(parts[0].replace(',', '.'));
         const frac = parts[1] in unicodeFractions ? unicodeFractions[parts[1]] : parseFraction(parts[1]);
-        return whole + frac;
+        hasil = whole + frac;
+    } else if (s.includes('/')) {
+        hasil = parseFraction(s);
+    } else if (unicodeFractions[s] !== undefined) {
+        hasil = unicodeFractions[s];
+    } else if (RE_DESIMAL.test(s)) {
+        hasil = parseFloat(s.replace(',', '.'));
+    } else {
+        return NaN;
     }
-    if (val.includes('/')) return parseFraction(val);
-    if (unicodeFractions[val] !== undefined) return unicodeFractions[val];
-    return parseFloat(val.replace(',', '.'));
+    return hasil === 0 ? 0 : tanda * hasil;      // hindari -0
 }
 
 // buang noise floating point (0.1+0.2 -> 0.3)
@@ -180,9 +204,9 @@ function rapikan(n) {
 
 function parseFraction(frac) {
     const parts = frac.split('/');
-    if (parts.length!== 2) return NaN;
-    const num = parseFloat(parts[0]);
-    const den = parseFloat(parts[1]);
+    if (parts.length !== 2 || !RE_DESIMAL.test(parts[0].trim()) || !RE_DESIMAL.test(parts[1].trim())) return NaN;
+    const num = parseFloat(parts[0].replace(',', '.'));
+    const den = parseFloat(parts[1].replace(',', '.'));
     if (isNaN(num) || isNaN(den) || den === 0) return NaN;
     return num / den;
 }
@@ -960,6 +984,55 @@ function lapStopwatch() {
     lapItem.textContent = `Lap: ${lapTime}`;
     const lapList = document.getElementById('lapList');
     if(lapList) lapList.prepend(lapItem);
+}
+
+// ----- tombol pecahan: keyboard angka di HP tidak punya "/" maupun "½" -----
+let kolomKalkulator = null;      // kolom kalkulator yang terakhir diketuk
+document.addEventListener('focusin', e => {
+    if (e.target && (e.target.id === 'angka1' || e.target.id === 'angka2')) kolomKalkulator = e.target;
+});
+
+// sisipkan karakter di posisi kursor kolom aktif (angka kedua tersembunyi pada akar/lingkaran/kubus -> angka pertama)
+function sisipkanPecahan(ch) {
+    let el = kolomKalkulator;
+    let pindah = false;                                    // true = bukan kolom yang sedang diketik pengguna
+    if (!el || el.offsetParent === null) { el = document.getElementById('angka1'); pindah = true; }
+    el.focus();
+    // kolom yang baru dipilih otomatis: tambahkan di akhir (posisi kursor lamanya tidak relevan)
+    const mulai = pindah ? el.value.length : (typeof el.selectionStart === 'number' ? el.selectionStart : el.value.length);
+    const akhir = pindah ? mulai : (typeof el.selectionEnd === 'number' ? el.selectionEnd : mulai);
+    el.value = el.value.slice(0, mulai) + ch + el.value.slice(akhir);
+    const pos = mulai + ch.length;
+    try { el.setSelectionRange(pos, pos); } catch (e) { /* abaikan */ }
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+
+// ----- perbarui aplikasi: bersihkan semua cache lalu muat ulang dengan berkas terbaru -----
+// Dipakai kalau berkas sudah diganti di server tetapi browser masih menampilkan versi lama.
+async function perbaruiAplikasi() {
+    const tombol = document.getElementById('perbaruiApp');
+    if (tombol) { tombol.disabled = true; tombol.textContent = 'Memperbarui…'; }
+    try {
+        if ('serviceWorker' in navigator) {
+            const daftarSw = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(daftarSw.map(r => r.unregister()));
+        }
+        if (window.caches) {
+            const nama = await caches.keys();
+            await Promise.all(nama.map(n => caches.delete(n)));
+        }
+        // segarkan juga cache HTTP browser: berkas dari daftar di sw.js + yang dirujuk halaman ini (termasuk ?v=)
+        let daftar = ['index.html', 'style.css', 'script.js', 'pwa.js', 'manifest.webmanifest'];
+        try {
+            const teks = await (await fetch('sw.js', { cache: 'reload' })).text();
+            const m = teks.match(/const ASSETS = \[([\s\S]*?)\];/);
+            if (m) daftar = (m[1].match(/'([^']+)'/g) || []).map(x => x.slice(1, -1)).filter(x => x !== './');
+        } catch (e) { /* pakai daftar bawaan */ }
+        document.querySelectorAll('link[rel="stylesheet"][href], script[src]').forEach(el => daftar.push(el.getAttribute('href') || el.getAttribute('src')));
+        await Promise.all(daftar.map(u => fetch(u, { cache: 'reload' }).catch(() => {})));
+    } catch (e) { /* tetap lanjut memuat ulang */ }
+    location.reload();
 }
 
 function tukarSuhu() {

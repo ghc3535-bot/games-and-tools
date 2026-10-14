@@ -63,6 +63,13 @@
     if ('serviceWorker' in navigator && window.isSecureContext) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+                // Tanpa ini browser hanya memeriksa sw.js baru ~sekali per 24 jam, jadi versi lama bisa bertahan seharian.
+                // Periksa tiap halaman dibuka dan tiap aplikasi kembali ke layar (paling sering sekali per 2 menit).
+                let terakhirCek = Date.now();
+                reg.update().catch(() => {});
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && Date.now() - terakhirCek > 120000) { terakhirCek = Date.now(); reg.update().catch(() => {}); }
+                });
                 reg.addEventListener('updatefound', () => {
                     const baru = reg.installing;
                     if (!baru) return;

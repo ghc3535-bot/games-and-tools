@@ -9,9 +9,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Multi Tool">
-<title>Multi Function</title>
-<link rel="stylesheet" href="style.css?v=5">
+<meta name="apple-mobile-web-app-title" content="Perkakas Saku">
+<title>Perkakas Saku</title>
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <div class="app">
@@ -25,7 +25,7 @@
 
   <!-- ==================== LAYAR UTAMA ==================== -->
   <section id="viewHome">
-    <h1><span class="t-ico">🧰</span> Multi Function</h1>
+    <h1><span class="t-ico">🧰</span> Perkakas Saku</h1>
     <p class="sub">Kalkulator, catatan, diagram, dan permainan di satu tempat</p>
     <p class="tanggal" id="homeTanggal"></p>
 
@@ -57,6 +57,9 @@
     </div>
 
     <div id="homeInfo" class="home-info hidden"></div>
+
+    <p class="versi">Perkakas Saku · <span id="versiApp">v2.4</span> ·
+      <button type="button" id="perbaruiApp" class="tautan" onclick="perbaruiAplikasi()">Perbarui aplikasi</button></p>
   </section>
 
   <!-- ==================== DAFTAR & ISI TOOLS ==================== -->
@@ -92,6 +95,18 @@
         <div id="angka2Wrap">
           <label class="lbl" for="angka2">Angka kedua</label>
           <input type="text" id="angka2" placeholder="Angka kedua" inputmode="decimal" autocomplete="off">
+        </div>
+        <div class="pecahan">
+          <span class="lbl">Sisipkan pecahan ke kolom yang sedang aktif</span>
+          <div class="chip-row" id="pecahanBaris">
+            <button type="button" class="chip" onmousedown="event.preventDefault()" onclick="sisipkanPecahan('½')">½</button>
+            <button type="button" class="chip" onmousedown="event.preventDefault()" onclick="sisipkanPecahan('⅓')">⅓</button>
+            <button type="button" class="chip" onmousedown="event.preventDefault()" onclick="sisipkanPecahan('⅔')">⅔</button>
+            <button type="button" class="chip" onmousedown="event.preventDefault()" onclick="sisipkanPecahan('¼')">¼</button>
+            <button type="button" class="chip" onmousedown="event.preventDefault()" onclick="sisipkanPecahan('¾')">¾</button>
+            <button type="button" class="chip" onmousedown="event.preventDefault()" onclick="sisipkanPecahan('⅛')">⅛</button>
+            <button type="button" class="chip" onmousedown="event.preventDefault()" onclick="sisipkanPecahan('/')" aria-label="Garis pecahan">/</button>
+          </div>
         </div>
         <button class="btn-accent" onclick="hitung()">Hitung</button>
         <div id="hasil" class="hasil" style="display:none;"></div>
@@ -260,7 +275,7 @@
   </section>
 
 </div>
-<script src="script.js?v=5"></script>
+<script src="script.js?v=7"></script>
 <script src="pwa.js?v=1"></script>
 </body>
 </html>
