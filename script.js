@@ -25,7 +25,7 @@ const $ = id => document.getElementById(id);
 
 const TOOLS_UTAMA = [
     { id: 'kalkulator',      icon: '🧮', nama: 'Kalkulator',      desk: 'Hitung, akar, pecahan, lingkaran, kubus', kata: 'hitung tambah kurang kali bagi pangkat pecahan history' },
-    { id: 'statistikDasar',  icon: '📊', nama: 'Stat Dasar',      desk: 'Total, rata-rata, median, modus',          kata: 'mean median modus rata-rata persentase statistik' },
+    { id: 'statistikDasar',  icon: '📊', nama: 'Stat Dasar',      desk: 'Rata-rata, median, modus, simpangan baku',  kata: 'mean median modus rata-rata persentase statistik varians simpangan baku standar deviasi sebaran' },
     { id: 'statistikLanjut', icon: '📈', nama: 'Data Persentil',  desk: 'Kuartil, IQR, outlier, persentil',         kata: 'kuartil q1 q3 iqr outlier persentil statistik' },
     { id: 'diagram',         icon: '📉', nama: 'Diagram',         desk: 'Bar, line, pie, donut, lalu ekspor',       kata: 'chart grafik bar line pie donut png jpg gambar' },
     { id: 'suhu',            icon: '🌡️', nama: 'Suhu',            desk: 'Celcius, Fahrenheit, Kelvin',              kata: 'celcius fahrenheit kelvin konversi' },
@@ -654,6 +654,29 @@ function drawPie(ctx, labels, values, colors, total, theme, L, donut) {
 }
 
 // STATISTIK DASAR
+// Ukuran sebaran data. Dua langkah (hitung rata-rata dulu, baru selisihnya) supaya tetap akurat untuk angka besar:
+// mis. 1000000004, 1000000007, ... tidak kehilangan ketelitian seperti rumus "rata-rata kuadrat - kuadrat rata-rata".
+function hitungSebaran(values) {
+    const n = values.length;
+    const mean = values.reduce((a, b) => a + b, 0) / n;
+    let ss = 0, min = values[0], max = values[0];
+    for (const v of values) {
+        const d = v - mean;
+        ss += d * d;
+        if (v < min) min = v;
+        if (v > max) max = v;
+    }
+    const varPop = ss / n;
+    const varSampel = n > 1 ? ss / (n - 1) : NaN;       // varians sampel butuh minimal 2 data
+    return {
+        n, mean, min, max, rentang: max - min, ss, varPop, varSampel,
+        sdPop: Math.sqrt(varPop), sdSampel: n > 1 ? Math.sqrt(varSampel) : NaN
+    };
+}
+
+// angka bersih untuk ditampilkan: 6 angka penting, tanpa nol di belakang
+const fmtSebaran = x => (Number.isNaN(x) ? '—' : String(Number(x.toPrecision(6))));
+
 function hitungStatistikDasar() {
     const dataInput = document.getElementById("dataDasar").value.trim();
     const labelInput = document.getElementById("labelDasar").value.trim();
@@ -666,7 +689,10 @@ function hitungStatistikDasar() {
         return;
     }
 
-    const values = dataInput.split(',').map(s => parseNumber(s.trim())).filter(x =>!isNaN(x));
+    const mentah = dataInput.split(',').map(s => s.trim()).filter(s => s !== '');
+    const diurai = mentah.map(s => parseNumber(s));
+    const values = diurai.filter(x => !isNaN(x));
+    const diabaikan = mentah.filter((s, i) => isNaN(diurai[i]));
     if (values.length === 0) {
         hasil.innerText = "Data tidak valid! Pakai angka dipisah koma, contoh: 1,2,3";
         hasil.classList.add("error");
@@ -686,9 +712,25 @@ function hitungStatistikDasar() {
     const maxFreq = Math.max(...Object.values(freq));
     const modus = Object.keys(freq).filter(k => freq[k] === maxFreq).join(", ");
 
+    const sb = hitungSebaran(values);
     let langkah = `JALAN PENYELESAIAN STATISTIK DASAR:\n`;
+    if (diabaikan.length > 0) {
+        const contoh = diabaikan.slice(0, 5).join(", ") + (diabaikan.length > 5 ? ", …" : "");
+        langkah += `⚠ ${diabaikan.length} isian diabaikan karena bukan angka: ${contoh}\n`;
+    }
     langkah += `Data: ${values.join(", ")}\n`;
-    langkah += `Total: ${total}\nMean: ${mean.toFixed(2)}\nMedian: ${median}\nModus: ${modus}\n\n`;
+    langkah += `Total: ${total}\nMean: ${mean.toFixed(2)}\nMedian: ${median}\nModus: ${modus}\n`;
+    langkah += `Jumlah data (n): ${sb.n}\nMin: ${fmtSebaran(sb.min)} | Maks: ${fmtSebaran(sb.max)} | Rentang: ${fmtSebaran(sb.rentang)}\n\n`;
+    langkah += `SEBARAN DATA:\n`;
+    langkah += `Σ(x − mean)² = ${fmtSebaran(sb.ss)}\n`;
+    langkah += `Varians populasi (σ²) = ${fmtSebaran(sb.ss)} / ${sb.n} = ${fmtSebaran(sb.varPop)}\n`;
+    langkah += sb.n > 1
+        ? `Varians sampel (s²) = ${fmtSebaran(sb.ss)} / ${sb.n - 1} = ${fmtSebaran(sb.varSampel)}\n`
+        : `Varians sampel (s²) = — (butuh minimal 2 data)\n`;
+    langkah += `Simpangan baku populasi (σ) = ${fmtSebaran(sb.sdPop)}\n`;
+    langkah += sb.n > 1
+        ? `Simpangan baku sampel (s) = ${fmtSebaran(sb.sdSampel)}\n\n`
+        : `Simpangan baku sampel (s) = — (butuh minimal 2 data)\n\n`;
     langkah += `PERSENTASE:\n`;
     values.forEach((v, i) => {
         let persen = total > 0? (v / total * 100).toFixed(1) : 0;
