@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SERVICE WORKER — membuat Perkakas Saku bisa dipakai tanpa internet.
+   SERVICE WORKER — membuat Toolkit bisa dipakai tanpa internet.
 
    Strategi "jaringan dulu, cache cadangan":
    - Online (atau server lokal hidup): selalu periksa ke server dan ambil file TERBARU (mengabaikan cache HTTP
@@ -10,7 +10,7 @@
    Daftar ASSETS di bawah diunduh sekali saat pertama kali dibuka (butuh internet/server aktif),
    supaya semua halaman siap dipakai offline. Kalau kamu menambah file baru, tambahkan juga ke daftar ini.
    ========================================================================== */
-const VERSI = 'perkakas-v1';
+const VERSI = 'toolkit-v1';
 const BATAS_TUNGGU_MS = 4000;
 
 const ASSETS = [

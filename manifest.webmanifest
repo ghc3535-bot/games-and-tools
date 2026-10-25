@@ -1,7 +1,7 @@
 {
   "id": "./index.html",
-  "name": "Perkakas Saku",
-  "short_name": "Perkakas",
+  "name": "Toolkit",
+  "short_name": "Toolkit",
   "description": "Kalkulator, statistik, diagram, catatan, QR Code, dan game catur dalam satu aplikasi.",
   "lang": "id",
   "dir": "ltr",
