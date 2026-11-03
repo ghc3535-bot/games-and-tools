@@ -86,6 +86,7 @@ function tampilTool(id) {
 
 // ----- layar utama -----
 function renderHome() {
+    perbaruiInfoCadangan();
     $('homeTanggal').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const baris = [];
     try {
@@ -1075,6 +1076,169 @@ async function perbaruiAplikasi() {
         await Promise.all(daftar.map(u => fetch(u, { cache: 'reload' }).catch(() => {})));
     } catch (e) { /* tetap lanjut memuat ulang */ }
     location.reload();
+}
+
+// ==========================================================================
+// CADANGKAN & PULIHKAN DATA
+// Semua data tersimpan di browser HP ini saja (localStorage). Satu berkas JSON melindunginya
+// kalau data situs terhapus atau HP diganti. Berkas diperiksa dulu sebelum menimpa apa pun.
+// ==========================================================================
+const KUNCI_CADANGAN = ['tasks', 'note', 'calcHistory', 'theme', 'catur_save_v1', 'catur_anim'];
+const MAKS_BERKAS_CADANGAN = 3 * 1024 * 1024;
+let cadanganMenunggu = null;      // hasil pemeriksaan yang menunggu konfirmasi
+let sebelumPemulihan = null;      // salinan data sebelum dipulihkan, untuk "Urungkan"
+
+function bacaKunci(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function simpanKunci(k, v) {
+    try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); return true; }
+    catch (e) { return false; }
+}
+
+// tiap pemeriksa mengembalikan teks yang sudah dibersihkan, atau null kalau isinya tidak sah
+function daftarAman(s, maksItem, ubah) {
+    let a; try { a = JSON.parse(s); } catch (e) { return null; }
+    if (!Array.isArray(a) || a.length > maksItem) return null;
+    const out = [];
+    for (const x of a) { const y = ubah(x); if (y === undefined) return null; out.push(y); }
+    return JSON.stringify(out);
+}
+const VALIDASI_CADANGAN = {
+    tasks: s => daftarAman(s, 2000, t => (t && typeof t.text === 'string' && t.text.length <= 500) ? { text: t.text, done: t.done === true } : undefined),
+    calcHistory: s => daftarAman(s, 2000, x => (typeof x === 'string' && x.length <= 500) ? x : undefined),
+    note: s => s.length <= 200000 ? s : null,
+    theme: s => (s === 'dark' || s === 'light') ? s : null,
+    catur_anim: s => (s === 'on' || s === 'off') ? s : null,
+    catur_save_v1: s => {
+        if (s.length > 2 * 1024 * 1024) return null;
+        let o; try { o = JSON.parse(s); } catch (e) { return null; }
+        const ok = o && o.v === 1 && Array.isArray(o.board) && o.board.length === 8 && o.board.every(r => Array.isArray(r) && r.length === 8) &&
+            (o.turn === 'w' || o.turn === 'b') && Array.isArray(o.history) && o.history.length > 0 && Array.isArray(o.moveLog) &&
+            Array.isArray(o.positionLog) && o.castling && typeof o.castling === 'object' && (o.gameMode === 'pvp' || o.gameMode === 'bot');
+        return ok ? s : null;
+    }
+};
+
+// kalimat singkat tentang isi satu kunci, mis. "3 tugas"
+function fraseKunci(k, v) {
+    try {
+        if (k === 'tasks') return JSON.parse(v).length + ' tugas';
+        if (k === 'note') return v.trim() ? 'catatan panjang' : 'catatan kosong';
+        if (k === 'calcHistory') return JSON.parse(v).length + ' riwayat hitung';
+        if (k === 'catur_save_v1') return 'game catur ' + JSON.parse(v).history.length + ' langkah';
+        if (k === 'theme') return 'tema ' + (v === 'dark' ? 'gelap' : 'terang');
+        if (k === 'catur_anim') return 'animasi catur ' + (v === 'off' ? 'mati' : 'nyala');
+    } catch (e) { /* abaikan */ }
+    return k;
+}
+
+function periksaCadangan(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj) || obj.app !== 'toolkit')
+        return { galat: 'Ini bukan berkas cadangan Toolkit.' };
+    if (obj.versi !== 1) return { galat: 'Versi berkas cadangan ini belum dikenali.' };
+    const d = obj.data;
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return { galat: 'Berkas cadangan rusak: bagian data tidak ditemukan.' };
+    const bersih = {}, dilewati = [];
+    KUNCI_CADANGAN.forEach(k => {
+        if (!(k in d)) return;
+        const hasil = typeof d[k] === 'string' ? VALIDASI_CADANGAN[k](d[k]) : null;
+        if (hasil === null) dilewati.push(k); else bersih[k] = hasil;
+    });
+    if (Object.keys(bersih).length === 0) return { galat: 'Tidak ada data yang bisa dipulihkan dari berkas ini.' };
+    return { bersih, dilewati };
+}
+
+function tampilCadangan(teks, galat) {
+    const el = document.getElementById('cadanganStatus');
+    if (!el) return;
+    el.textContent = teks;
+    el.classList.toggle('galat-teks', !!galat);
+}
+
+function perbaruiInfoCadangan() {
+    const el = document.getElementById('cadanganInfo');
+    if (!el) return;
+    const t = Number(bacaKunci('cadangan_terakhir'));
+    el.textContent = t ? 'Cadangan terakhir: ' + new Date(t).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Belum pernah dicadangkan.';
+}
+
+function unduhCadangan() {
+    const data = {};
+    KUNCI_CADANGAN.forEach(k => { const v = bacaKunci(k); if (v !== null) data[k] = v; });
+    if (Object.keys(data).length === 0) { tampilCadangan('Belum ada data yang bisa dicadangkan.', true); return; }
+    const paket = { app: 'toolkit', versi: 1, dibuat: new Date().toISOString(), data };
+    const t = new Date();
+    const nama = 'toolkit-cadangan-' + t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0') + '.json';
+    const url = URL.createObjectURL(new Blob([JSON.stringify(paket, null, 2)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = nama;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    simpanKunci('cadangan_terakhir', String(Date.now()));
+    perbaruiInfoCadangan();
+    tampilCadangan('Cadangan diunduh (' + nama + '): ' + Object.keys(data).map(k => fraseKunci(k, data[k])).join(', ') + '.');
+}
+
+function pilihBerkasCadangan() { document.getElementById('berkasCadangan').click(); }
+
+async function bacaBerkasCadangan(input) {
+    const berkas = input.files && input.files[0];
+    input.value = '';                       // supaya berkas yang sama bisa dipilih lagi
+    if (!berkas) return;
+    batalkanCadangan(true);
+    if (berkas.size > MAKS_BERKAS_CADANGAN) { tampilCadangan('Berkas terlalu besar (maksimal 3 MB), jadi bukan cadangan Toolkit.', true); return; }
+    let obj;
+    try { obj = JSON.parse(await berkas.text()); }
+    catch (e) { tampilCadangan('Berkas ini bukan JSON yang valid. Pilih berkas yang diunduh dari tombol "Cadangkan".', true); return; }
+    const r = periksaCadangan(obj);
+    if (r.galat) { tampilCadangan(r.galat, true); return; }
+    cadanganMenunggu = r;
+    const daftar = document.getElementById('cadanganDaftar');
+    daftar.innerHTML = Object.keys(r.bersih).map(k => {
+        const sekarang = bacaKunci(k);
+        return '<li>' + escapeHTML(fraseKunci(k, r.bersih[k])) + ' <span class="muted-kecil">(sekarang: ' + escapeHTML(sekarang !== null ? fraseKunci(k, sekarang) : 'kosong') + ')</span></li>';
+    }).join('') + (r.dilewati.length ? '<li class="peringatan">Dilewati karena rusak atau tidak sah: ' + escapeHTML(r.dilewati.join(', ')) + '</li>' : '');
+    document.getElementById('cadanganKonfirmasi').classList.remove('hidden');
+    tampilCadangan('');
+}
+
+function batalkanCadangan(diam) {
+    cadanganMenunggu = null;
+    const k = document.getElementById('cadanganKonfirmasi');
+    if (k) k.classList.add('hidden');
+    if (!diam) tampilCadangan('Pemulihan dibatalkan. Data tidak diubah.');
+}
+
+function segarkanSetelahPemulihan() {
+    tasks = bacaDaftar('tasks').filter(t => t && typeof t.text === 'string');
+    historyList = bacaDaftar('calcHistory');
+    showTasks();
+    loadNote();
+    const dark = bacaKunci('theme') === 'dark';
+    const btn = document.getElementById('themeBtn');
+    if (dark) { document.body.setAttribute('data-theme', 'dark'); if (btn) btn.innerText = '☀️ Light Mode'; }
+    else { document.body.removeAttribute('data-theme'); if (btn) btn.innerText = '🌙 Dark Mode'; }
+    renderHome();
+}
+
+function terapkanCadangan() {
+    if (!cadanganMenunggu) return;
+    const bersih = cadanganMenunggu.bersih, gagal = [];
+    sebelumPemulihan = {};
+    Object.keys(bersih).forEach(k => { sebelumPemulihan[k] = bacaKunci(k); if (!simpanKunci(k, bersih[k])) gagal.push(k); });
+    const ringkas = Object.keys(bersih).map(k => fraseKunci(k, bersih[k])).join(', ');
+    batalkanCadangan(true);
+    segarkanSetelahPemulihan();
+    document.getElementById('cadanganUrungkan').classList.remove('hidden');
+    tampilCadangan(gagal.length ? 'Sebagian gagal disimpan (penyimpanan penuh atau diblokir): ' + gagal.join(', ') + '.' : 'Data dipulihkan: ' + ringkas + '.', gagal.length > 0);
+}
+
+function urungkanPemulihan() {
+    if (!sebelumPemulihan) return;
+    Object.keys(sebelumPemulihan).forEach(k => simpanKunci(k, sebelumPemulihan[k]));
+    sebelumPemulihan = null;
+    document.getElementById('cadanganUrungkan').classList.add('hidden');
+    segarkanSetelahPemulihan();
+    tampilCadangan('Pemulihan diurungkan: data kembali seperti sebelumnya.');
 }
 
 function tukarSuhu() {

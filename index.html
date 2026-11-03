@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Toolkit">
 <title>Toolkit</title>
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 <div class="app">
@@ -58,7 +58,29 @@
 
     <div id="homeInfo" class="home-info hidden"></div>
 
-    <p class="versi">Toolkit · <span id="versiApp">v2.6</span> ·
+    <details class="cadangan" id="cadangan">
+      <summary>💾 Cadangkan &amp; pulihkan data</summary>
+      <p class="catatan-kecil">Catatan, tugas, riwayat kalkulator, dan game catur hanya tersimpan di browser HP ini. Kalau data situs terhapus, semuanya ikut hilang. Simpan cadangannya sesekali.</p>
+      <p class="catatan-kecil" id="cadanganInfo"></p>
+      <div class="two">
+        <button type="button" class="btn-accent" onclick="unduhCadangan()">⬇ Cadangkan</button>
+        <button type="button" class="btn-soft" onclick="pilihBerkasCadangan()">⬆ Pulihkan</button>
+      </div>
+      <input type="file" id="berkasCadangan" accept="application/json,.json" class="hidden" onchange="bacaBerkasCadangan(this)">
+      <div id="cadanganKonfirmasi" class="konfirmasi hidden">
+        <b>Pulihkan data ini?</b>
+        <ul id="cadanganDaftar"></ul>
+        <p class="catatan-kecil">Data yang sama di HP ini akan <b>ditimpa</b>. Kamu masih bisa mengurungkannya selama halaman ini belum ditutup.</p>
+        <div class="two">
+          <button type="button" class="btn-accent" onclick="terapkanCadangan()">Pulihkan</button>
+          <button type="button" class="btn-soft" onclick="batalkanCadangan()">Batal</button>
+        </div>
+      </div>
+      <button type="button" id="cadanganUrungkan" class="btn-soft hidden" onclick="urungkanPemulihan()">↩ Urungkan pemulihan</button>
+      <div id="cadanganStatus" class="status-cadangan" role="status" aria-live="polite"></div>
+    </details>
+
+    <p class="versi">Toolkit · <span id="versiApp">v2.7</span> ·
       <button type="button" id="perbaruiApp" class="tautan" onclick="perbaruiAplikasi()">Perbarui aplikasi</button></p>
   </section>
 
@@ -275,7 +297,7 @@
   </section>
 
 </div>
-<script src="script.js?v=8"></script>
+<script src="script.js?v=9"></script>
 <script src="pwa.js?v=1"></script>
 </body>
 </html>
